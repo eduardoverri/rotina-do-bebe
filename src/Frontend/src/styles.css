@@ -1,0 +1,204 @@
+/* ==========================================================================
+   Design System: "Fricção Zero no Escuro" (Modo Madrugada True Black #0A0B0E)
+   Segue as diretrizes do Design Doc (Seção 5.1) + Modern Web Guidance
+   ========================================================================== */
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+}
+
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Superfícies com light-dark() nativo — True Black #0A0B0E no Modo Noturno */
+  --bg-canvas: light-dark(#F8FAFC, #0A0B0E);
+  --bg-surface: light-dark(#FFFFFF, #12141C);
+  --bg-surface-elevated: light-dark(#F1F5F9, #1A1D28);
+  --bg-surface-muted: light-dark(#E2E8F0, #232736);
+
+  /* Tipografia com contraste >= 4.5:1 */
+  --text-primary: light-dark(#0F172A, #F1F5F9);
+  --text-secondary: light-dark(#334155, #CBD5E1);
+  --text-muted: light-dark(#475569, #94A3B8);
+
+  /* Bordas com contraste >= 3:1 para componentes interativos */
+  --border-subtle: light-dark(#CBD5E1, #2E3446);
+  --border-strong: light-dark(#64748B, #475569);
+
+  /* Cores por Categoria (Seção 5.1 do Design Doc) */
+  --cat-sleep: light-dark(#4F46E5, #6366F1);
+  --cat-sleep-bg: light-dark(#EEF2FF, rgba(99, 102, 241, 0.16));
+  --cat-feeding: light-dark(#EA580C, #F97316);
+  --cat-feeding-bg: light-dark(#FFF7ED, rgba(249, 115, 22, 0.16));
+  --cat-diaper: light-dark(#059669, #10B981);
+  --cat-diaper-bg: light-dark(#ECFDF5, rgba(16, 185, 129, 0.16));
+  --cat-health: light-dark(#DC2626, #EF4444);
+  --cat-health-bg: light-dark(#FEF2F2, rgba(239, 68, 68, 0.16));
+  --cat-milestone: light-dark(#D97706, #F59E0B);
+  --cat-milestone-bg: light-dark(#FFFBEB, rgba(245, 158, 11, 0.16));
+
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --shadow-card: light-dark(
+    0 4px 16px -2px rgba(15, 23, 42, 0.06),
+    0 6px 20px -2px rgba(0, 0, 0, 0.65)
+  );
+}
+
+/* Suporte a Forced Colors Mode (Windows High Contrast) */
+@media (forced-colors: active) {
+  :root {
+    --border-subtle: CanvasText;
+    --border-strong: Highlight;
+  }
+  .card, .btn, .badge, .quick-bar-btn {
+    border: 1px solid CanvasText !important;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 110px; /* Espaço para a QuickActionBar ergonômica inferior */
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Utilitários do Design System */
+.app-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+}
+
+.card-elevated {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+}
+
+.badge-sleep { background: var(--cat-sleep-bg); color: var(--cat-sleep); border-color: var(--cat-sleep); }
+.badge-feeding { background: var(--cat-feeding-bg); color: var(--cat-feeding); border-color: var(--cat-feeding); }
+.badge-diaper { background: var(--cat-diaper-bg); color: var(--cat-diaper); border-color: var(--cat-diaper); }
+.badge-health { background: var(--cat-health-bg); color: var(--cat-health); border-color: var(--cat-health); }
+.badge-milestone { background: var(--cat-milestone-bg); color: var(--cat-milestone); border-color: var(--cat-milestone); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  padding: 0.65rem 1.15rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--bg-surface-muted);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-sleep { background: var(--cat-sleep); color: #FFFFFF; border-color: transparent; }
+.btn-feeding { background: var(--cat-feeding); color: #FFFFFF; border-color: transparent; }
+.btn-diaper { background: var(--cat-diaper); color: #FFFFFF; border-color: transparent; }
+.btn-health { background: var(--cat-health); color: #FFFFFF; border-color: transparent; }
+.btn-milestone { background: var(--cat-milestone); color: #0A0B0E; border-color: transparent; }
+
+.input-field {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.mono-timer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    padding-bottom: 0;
+    background: #FFFFFF;
+    color: #000000;
+  }
+}

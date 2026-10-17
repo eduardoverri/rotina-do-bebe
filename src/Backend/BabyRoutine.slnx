@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="BabyRoutine.Api/BabyRoutine.Api.csproj" />
+  <Project Path="BabyRoutine.Application/BabyRoutine.Application.csproj" />
+  <Project Path="BabyRoutine.Infrastructure/BabyRoutine.Infrastructure.csproj" />
+  <Project Path="BabyRoutine.Tests/BabyRoutine.Tests.csproj" />
+</Solution>

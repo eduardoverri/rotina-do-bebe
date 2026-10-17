@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Rotina do Bebê (0 a 24 Meses) — Gestão Clínica & Familiar</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0B0E">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      const savedScheme = localStorage.getItem("color-scheme");
+      const hour = new Date().getHours();
+      const isNightHours = hour >= 20 || hour < 6;
+      document.querySelector('meta[name="color-scheme"]').content = savedScheme ?? (isNightHours ? "dark" : "light dark");
+    } catch (_) {}
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

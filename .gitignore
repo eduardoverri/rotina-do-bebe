@@ -1,0 +1,120 @@
+# =============================================================================
+# Operating System & General Editor Files
+# =============================================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# IDEs & Editors (VS Code, Visual Studio, JetBrains Rider)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sln.iml
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# =============================================================================
+# .NET / C# (Minimal API, Application, Infrastructure, Tests)
+# =============================================================================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+
+# .NET Build & Publish Artifacts
+out/
+publish/
+artifacts/
+*.nupkg
+*.snupkg
+*.appx
+*.appxbundle
+*.appxupload
+project.lock.json
+project.fragment.lock.json
+
+# .NET Test Results & Code Coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage.json
+coverage.cobertura.xml
+TestResults/
+BenchmarkDotNet.Artifacts/
+
+# User-Specific Secrets & Local AppSettings Overrides
+appsettings.Development.local.json
+appsettings.Local.json
+secrets.json
+
+# =============================================================================
+# Angular / Node.js / TypeScript (PWA Frontend)
+# =============================================================================
+node_modules/
+jspm_packages/
+bower_components/
+
+# Angular CLI Cache & Build Outputs
+.angular/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+
+# TypeScript & Bundler Caches
+*.tsbuildinfo
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# npm / yarn / pnpm Logs & Error Dumps
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Frontend Unit / E2E Test & Coverage Outputs
+coverage/
+.nyc_output/
+lib-cov/
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+
+# =============================================================================
+# Environment Variables, Certificates & Local Databases
+# =============================================================================
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+*.key
+*.crt
+
+# Local MongoDB / Docker Data Volumes
+mongo-data/
+mongodb_data/
+data/db/

@@ -1,0 +1,101 @@
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RoutineStore } from '../../../../core/state/routine.store';
+
+@Component({
+  selector: 'app-allergen-monitor',
+  standalone: true,
+  imports: [FormsModule],
+  template: `
+    <div class="card" style="border-top: 4px solid var(--cat-milestone);">
+      <h3 class="section-title">
+        <span aria-hidden="true">🥜</span>
+        <span>Protocolo de Vigilância de Alérgenos — Janela de 72 Horas (Seção 2.2)</span>
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Regra de ouro: Introduzir 1 novo alérgeno por vez no período diurno e monitorar por 48 a 72 horas.
+      </p>
+
+      <!-- Iniciar novo teste de 72h -->
+      <div class="card-elevated" style="margin-bottom: 1rem;">
+        <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 0.5rem;">➕ Iniciar Monitoramento de Novo Alérgeno (72h)</div>
+        <div class="grid-3">
+          <select class="input-field" [(ngModel)]="newAllergenName">
+            <option value="Ovo Cozido (Gema e Clara)">Ovo Cozido (Gema e Clara)</option>
+            <option value="Peixe (Filé sem espinhas)">Peixe (Filé sem espinhas)</option>
+            <option value="Pasta de Amendoim 100% Integral">Pasta de Amendoim (Diluída)</option>
+            <option value="Trigo / Glúten">Trigo / Glúten</option>
+            <option value="Iogurte Natural (Proteína do Leite)">Iogurte Natural (APLV)</option>
+          </select>
+          <input type="text" class="input-field" [(ngModel)]="initialDose" placeholder="Quantidade (ex: 1/4 colher de chá)" />
+          <button type="button" class="btn btn-milestone" (click)="startTrial()">
+            <span aria-hidden="true">⏱️</span>
+            <span>Iniciar Janela 72h</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Alérgenos Monitorados -->
+      @for (item of store.allergenTrials(); track item.trial.id) {
+        <div class="card-elevated" style="margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="font-weight: 800; font-size: 1rem;">{{ item.trial.foodName }}</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ item.evaluation.clinicalGuidance }}</div>
+            </div>
+            <span class="badge" [class]="item.evaluation.hasAlertSymptoms ? 'badge-health' : item.trial.status === 'SafeCompleted' ? 'badge-diaper' : 'badge-milestone'">
+              @if (item.evaluation.hasAlertSymptoms) {
+                <span aria-hidden="true">🚨</span> Reação Reportada
+              } @else if (item.trial.status === 'SafeCompleted') {
+                <span aria-hidden="true">✅</span> Seguro (72h Concluídas)
+              } @else {
+                <span aria-hidden="true">⏳</span> {{ item.evaluation.remainingHours }}h restantes
+              }
+            </span>
+          </div>
+
+          <!-- Checklist de Sinais de Alerta da Seção 2.2 -->
+          @if (item.trial.status === 'MonitoringActive') {
+            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); font-size: 0.84rem;">
+              <div style="font-weight: 700; margin-bottom: 0.4rem;">Reportar Sinais de Alerta Imediatos ou Tardios:</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                <button type="button" class="btn" style="min-height: 34px; font-size: 0.8rem;" (click)="reportSymptom(item.trial.id, 'hives')">
+                  🔴 Urticária / Placas na pele
+                </button>
+                <button type="button" class="btn" style="min-height: 34px; font-size: 0.8rem;" (click)="reportSymptom(item.trial.id, 'swelling')">
+                  🚨 Inchaço em lábios/olhos
+                </button>
+                <button type="button" class="btn" style="min-height: 34px; font-size: 0.8rem;" (click)="reportSymptom(item.trial.id, 'vomiting')">
+                  ⚠️ Vômitos agudos / Diarreia
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `
+})
+export class AllergenMonitorComponent {
+  readonly store = inject(RoutineStore);
+  newAllergenName = 'Ovo Cozido (Gema e Clara)';
+  initialDose = '';
+
+  async startTrial(): Promise<void> {
+    await this.store.startAllergenTrial({
+      foodName: this.newAllergenName,
+      foodCategory: 'Alérgeno Principal (Oferta Diurna)',
+      initialQuantityOffered: this.initialDose
+    });
+  }
+
+  async reportSymptom(trialId: string, type: 'hives' | 'swelling' | 'vomiting'): Promise<void> {
+    await this.store.updateAllergenSymptoms(trialId, {
+      hivesOrRash: type === 'hives',
+      facialSwelling: type === 'swelling',
+      acuteVomiting: type === 'vomiting',
+      explosiveDiarrhea: type === 'vomiting',
+      wheezing: false
+    });
+  }
+}
