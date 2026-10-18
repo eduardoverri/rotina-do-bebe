@@ -9,7 +9,7 @@ import { PopupAlertService } from '../../core/services/popup-alert.service';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div style="max-width: 500px; margin: 3rem auto;">
+    <div style="margin: 3rem auto;">
       <section class="card" style="border-top: 5px solid var(--cat-sleep); padding: 2rem;">
         <div style="text-align: center; margin-bottom: 1.75rem;">
           <img
