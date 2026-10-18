@@ -12,78 +12,8 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
   standalone: true,
   imports: [FormsModule, DatePipe, BabyAgePipe],
   template: `
-    <div class="grid-2">
-      <!-- Lista de Filhos vinculados à Conta Google atual -->
-      <section class="card" style="border-top: 4px solid var(--cat-sleep);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <div>
-            <h3 class="section-title" style="margin-bottom: 0.15rem;">
-              <span aria-hidden="true">👶</span>
-              <span>Filhos Vinculados à Conta Google</span>
-            </h3>
-            <p style="font-size: 0.84rem; color: var(--text-secondary);">
-              Usuário: <strong>{{ authService.currentUser()?.email }}</strong> • Cada filho possui linha do tempo, janelas de sono, alérgenos e marcos 100% separados.
-            </p>
-          </div>
-          <span class="badge badge-sleep">{{ babyStore.babies().length }} filho(s)</span>
-        </div>
-
-        @if (babyStore.babies().length === 0) {
-          <div class="card-elevated" style="text-align: center; padding: 1.5rem;">
-            <p style="font-weight: 700;">Nenhum filho cadastrado nesta Conta Google ainda.</p>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.3rem;">
-              Utilize o formulário ao lado para adicionar o primeiro filho(a) à sua conta.
-            </p>
-          </div>
-        }
-
-        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-          @for (b of babyStore.babies(); track b.id) {
-            <div
-              class="card-elevated"
-              [style.border-width]="babyStore.selectedBabyId() === b.id ? '2px' : '1px'"
-              [style.border-color]="babyStore.selectedBabyId() === b.id ? 'var(--cat-sleep)' : 'var(--border-subtle)'">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap;">
-                <div>
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.1rem; font-weight: 800;">{{ b.name }}</span>
-                    @if (babyStore.selectedBabyId() === b.id) {
-                      <span class="badge badge-diaper">✓ Selecionado</span>
-                    }
-                  </div>
-                  <div style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 0.2rem;">
-                    Idade: <strong>{{ b | babyAge }}</strong> • Nasc.: {{ b.birthDate | date:'dd/MM/yyyy' }} ({{ b.gestationalWeeks }}s {{ b.gestationalDays }}d)
-                  </div>
-                  <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">
-                    Peso atual: {{ b.currentWeightGrams }}g • Estatura: {{ b.currentHeightCm }}cm • Perímetro Cefálico: {{ b.headCircumferenceCm }}cm • Sangue: {{ b.bloodType }}
-                  </div>
-                </div>
-
-                <div style="display: flex; gap: 0.45rem;">
-                  <button
-                    type="button"
-                    class="btn btn-sleep"
-                    style="min-height: 36px; font-size: 0.8rem;"
-                    (click)="selectChild(b.id)">
-                    <span>Abrir Rotina</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="btn"
-                    style="min-height: 36px; font-size: 0.8rem;"
-                    (click)="removeChild(b.id)"
-                    title="Remover cadastro deste filho">
-                    <span aria-hidden="true">🗑️</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Formulário para Adicionar Novo Filho(a) à Conta Google -->
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <!-- 1. Formulário para Adicionar Novo Filho(a) à Conta Google (No início) -->
       <section class="card" style="border-top: 4px solid var(--cat-diaper);">
         <h3 class="section-title">
           <span aria-hidden="true">➕</span>
@@ -159,6 +89,79 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
           <span>Cadastrar Filho(a) e Iniciar Rotina Isolada</span>
         </button>
       </section>
+
+      <!-- 2. Lista de Filhos vinculados à Conta Google atual (Recolhível ao final) -->
+      <details class="card collapsible-card" style="border-top: 4px solid var(--cat-sleep);">
+        <summary class="collapsible-summary">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; flex: 1;">
+            <span class="section-title" style="margin-bottom: 0;">
+              <span aria-hidden="true">👶</span>
+              <span>Filhos Vinculados à Conta Google</span>
+            </span>
+            <span class="badge badge-sleep">{{ babyStore.babies().length }} filho(s)</span>
+          </div>
+        </summary>
+
+        <div class="collapsible-body">
+          <p style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Usuário: <strong>{{ authService.currentUser()?.email }}</strong> • Cada filho possui linha do tempo, janelas de sono, alérgenos e marcos 100% separados.
+          </p>
+
+          @if (babyStore.babies().length === 0) {
+            <div class="card-elevated" style="text-align: center; padding: 1.5rem;">
+              <p style="font-weight: 700;">Nenhum filho cadastrado nesta Conta Google ainda.</p>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                Utilize o formulário acima para adicionar o primeiro filho(a) à sua conta.
+              </p>
+            </div>
+          }
+
+          <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            @for (b of babyStore.babies(); track b.id) {
+              <div
+                class="card-elevated"
+                [style.border-width]="babyStore.selectedBabyId() === b.id ? '2px' : '1px'"
+                [style.border-color]="babyStore.selectedBabyId() === b.id ? 'var(--cat-sleep)' : 'var(--border-subtle)'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <span style="font-size: 1.1rem; font-weight: 800;">{{ b.name }}</span>
+                      @if (babyStore.selectedBabyId() === b.id) {
+                        <span class="badge badge-diaper">✓ Selecionado</span>
+                      }
+                    </div>
+                    <div style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                      Idade: <strong>{{ b | babyAge }}</strong> • Nasc.: {{ b.birthDate | date:'dd/MM/yyyy' }} ({{ b.gestationalWeeks }}s {{ b.gestationalDays }}d)
+                    </div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">
+                      Peso atual: {{ b.currentWeightGrams }}g • Estatura: {{ b.currentHeightCm }}cm • Perímetro Cefálico: {{ b.headCircumferenceCm }}cm • Sangue: {{ b.bloodType }}
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 0.45rem;">
+                    <button
+                      type="button"
+                      class="btn btn-sleep"
+                      style="min-height: 36px; font-size: 0.8rem;"
+                      (click)="selectChild(b.id)">
+                      <span>Abrir Rotina</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn"
+                      style="min-height: 36px; font-size: 0.8rem;"
+                      (click)="removeChild(b.id)"
+                      title="Remover cadastro deste filho">
+                      <span aria-hidden="true">🗑️</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </details>
     </div>
   `
 })

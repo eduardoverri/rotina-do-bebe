@@ -127,17 +127,21 @@ import { PopupAlertService } from '../../../../core/services/popup-alert.service
         </button>
       </div>
 
-      <!-- Guia de Sinais de Saciedade (Seção 2.1) -->
-      <div class="card-elevated" style="font-size: 0.85rem;">
-        <div style="font-weight: 700; color: var(--cat-feeding); margin-bottom: 0.3rem;">
-          ✅ Marcadores Biológicos de Saciedade (Seção 2.1):
+      <!-- Guia de Sinais de Saciedade (Seção 2.1) — Recolhível -->
+      <details class="card-elevated collapsible-card" style="font-size: 0.85rem;">
+        <summary class="collapsible-summary">
+          <span style="font-weight: 700; color: var(--cat-feeding);">
+            ✅ Marcadores Biológicos de Saciedade (Seção 2.1)
+          </span>
+        </summary>
+        <div class="collapsible-body">
+          <ul style="padding-left: 1.2rem; color: var(--text-secondary);">
+            <li>Punhos que estavam cerrados se abrem relaxados (relaxamento periférico).</li>
+            <li>Desprendimento espontâneo do mamilo ou bico.</li>
+            <li>Diminuição gradual da sucção e entrada em sonolência tranquila.</li>
+          </ul>
         </div>
-        <ul style="padding-left: 1.2rem; color: var(--text-secondary);">
-          <li>Punhos que estavam cerrados se abrem relaxados (relaxamento periférico).</li>
-          <li>Desprendimento espontâneo do mamilo ou bico.</li>
-          <li>Diminuição gradual da sucção e entrada em sonolência tranquila.</li>
-        </ul>
-      </div>
+      </details>
     </div>
   `
 })

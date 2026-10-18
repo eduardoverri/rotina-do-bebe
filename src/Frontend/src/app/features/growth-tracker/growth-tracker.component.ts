@@ -12,8 +12,8 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
   imports: [FormsModule, DatePipe, BabyAgePipe],
   template: `
     @if (babyStore.activeBaby(); as baby) {
-      <div class="grid-2" style="margin-bottom: 1.25rem;">
-        <!-- Formulário de Registro de Nova Aferição Antropométrica & Curvas OMS -->
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- 1. Formulário no início -->
         <section class="card" style="border-top: 4px solid var(--cat-diaper);">
           <h3 class="section-title">
             <span aria-hidden="true">📈</span>
@@ -114,96 +114,111 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
           </button>
         </section>
 
-        <!-- Resumo Atual de Indicadores Antropométricos -->
-        <section class="card" style="border-top: 4px solid var(--cat-sleep);">
-          <h3 class="section-title">
-            <span aria-hidden="true">👶</span>
-            <span>Indicadores Antropométricos Atuais</span>
-          </h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
-            Referência OMS por sexo biológico (<strong>{{ baby.gender === 'F' ? 'Feminino' : 'Masculino' }}</strong>) e idade corrigida quando prematuro (&lt; 37 semanas).
-          </p>
-
-          <div class="grid-2">
-            <div class="card-elevated">
-              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PESO ATUAL</div>
-              <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
-                {{ baby.currentWeightGrams }} g
-              </div>
-              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
-                Ao nascer: {{ baby.birthWeightGrams }} g
-              </div>
+        <!-- 2. Resumo Atual de Indicadores Antropométricos (Recolhível) -->
+        <details class="card collapsible-card" style="border-top: 4px solid var(--cat-sleep);">
+          <summary class="collapsible-summary">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; flex: 1;">
+              <span class="section-title" style="margin-bottom: 0;">
+                <span aria-hidden="true">👶</span>
+                <span>Indicadores Antropométricos Atuais</span>
+              </span>
+              <span class="badge badge-sleep">{{ baby.currentWeightGrams }} g • {{ baby.currentHeightCm }} cm • PC {{ baby.headCircumferenceCm }} cm</span>
             </div>
+          </summary>
 
-            <div class="card-elevated">
-              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">COMPRIMENTO ATUAL</div>
-              <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
-                {{ baby.currentHeightCm }} cm
-              </div>
-              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
-                Ao nascer: {{ baby.birthLengthCm }} cm
-              </div>
-            </div>
+          <div class="collapsible-body">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+              Referência OMS por sexo biológico (<strong>{{ baby.gender === 'F' ? 'Feminino' : 'Masculino' }}</strong>) e idade corrigida quando prematuro (&lt; 37 semanas).
+            </p>
 
-            <div class="card-elevated">
-              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PERÍMETRO CEFÁLICO ATUAL</div>
-              <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
-                {{ baby.headCircumferenceCm }} cm
+            <div class="grid-2">
+              <div class="card-elevated">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PESO ATUAL</div>
+                <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
+                  {{ baby.currentWeightGrams }} g
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                  Ao nascer: {{ baby.birthWeightGrams }} g
+                </div>
               </div>
-              <div style="font-size: 0.78rem; color: var(--cat-diaper); font-weight: 600; margin-top: 0.15rem;">
-                Monitoramento craniano ativo
-              </div>
-            </div>
 
-            <div class="card-elevated">
-              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL DE AFERIÇÕES</div>
-              <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
-                {{ baby.growthLogs.length }} registro(s)
+              <div class="card-elevated">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">COMPRIMENTO ATUAL</div>
+                <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
+                  {{ baby.currentHeightCm }} cm
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                  Ao nascer: {{ baby.birthLengthCm }} cm
+                </div>
               </div>
-              <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
-                Sincronizado com o Relatório Pediátrico
+
+              <div class="card-elevated">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">PERÍMETRO CEFÁLICO ATUAL</div>
+                <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
+                  {{ baby.headCircumferenceCm }} cm
+                </div>
+                <div style="font-size: 0.78rem; color: var(--cat-diaper); font-weight: 600; margin-top: 0.15rem;">
+                  Monitoramento craniano ativo
+                </div>
+              </div>
+
+              <div class="card-elevated">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700;">TOTAL DE AFERIÇÕES</div>
+                <div style="font-size: 1.3rem; font-weight: 800; margin-top: 0.2rem;">
+                  {{ baby.growthLogs.length }} registro(s)
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem;">
+                  Sincronizado com o Relatório Pediátrico
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </details>
+
+        <!-- 3. Tabela/Lista de Evolução Antropométrica e Curvas OMS ao final (Recolhível) -->
+        <details class="card collapsible-card">
+          <summary class="collapsible-summary">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; flex: 1;">
+              <span class="section-title" style="margin-bottom: 0;">
+                <span aria-hidden="true">📊</span>
+                <span>Evolução Antropométrica e Curvas OMS (Z-Score Peso/Idade)</span>
+              </span>
+              <span class="badge badge-diaper">{{ baby.growthLogs.length }} aferição(ões)</span>
+            </div>
+          </summary>
+
+          <div class="collapsible-body">
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border-strong); text-align: left;">
+                    <th style="padding: 0.55rem;">Data da Aferição</th>
+                    <th style="padding: 0.55rem;">Peso (g)</th>
+                    <th style="padding: 0.55rem;">Comprimento (cm)</th>
+                    <th style="padding: 0.55rem;">Perímetro Cefálico (cm)</th>
+                    <th style="padding: 0.55rem;">Escore-Z OMS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (g of baby.growthLogs; track g.measuredAt + '-' + g.weightGrams) {
+                    <tr style="border-bottom: 1px solid var(--border-subtle);">
+                      <td style="padding: 0.55rem;">{{ g.measuredAt | date:'dd/MM/yyyy' }}</td>
+                      <td style="padding: 0.55rem; font-weight: 700;">{{ g.weightGrams }} g</td>
+                      <td style="padding: 0.55rem;">{{ g.heightCm }} cm</td>
+                      <td style="padding: 0.55rem;">{{ g.headCircumferenceCm }} cm</td>
+                      <td style="padding: 0.55rem;">
+                        <span class="badge" [class.badge-diaper]="g.zScoreWeightForAge >= -2 && g.zScoreWeightForAge <= 2" [class.badge-milestone]="g.zScoreWeightForAge < -2 || g.zScoreWeightForAge > 2">
+                          Z = {{ formatZScore(g.zScoreWeightForAge) }} ({{ classifyZScore(g.zScoreWeightForAge) }})
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
       </div>
-
-      <!-- Tabela de Evolução Antropométrica e Curvas OMS -->
-      <section class="card">
-        <h3 class="section-title">
-          <span aria-hidden="true">📊</span>
-          <span>Evolução Antropométrica e Curvas OMS (Z-Score Peso/Idade)</span>
-        </h3>
-
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--border-strong); text-align: left;">
-                <th style="padding: 0.55rem;">Data da Aferição</th>
-                <th style="padding: 0.55rem;">Peso (g)</th>
-                <th style="padding: 0.55rem;">Comprimento (cm)</th>
-                <th style="padding: 0.55rem;">Perímetro Cefálico (cm)</th>
-                <th style="padding: 0.55rem;">Escore-Z OMS</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (g of baby.growthLogs; track g.measuredAt + '-' + g.weightGrams) {
-                <tr style="border-bottom: 1px solid var(--border-subtle);">
-                  <td style="padding: 0.55rem;">{{ g.measuredAt | date:'dd/MM/yyyy' }}</td>
-                  <td style="padding: 0.55rem; font-weight: 700;">{{ g.weightGrams }} g</td>
-                  <td style="padding: 0.55rem;">{{ g.heightCm }} cm</td>
-                  <td style="padding: 0.55rem;">{{ g.headCircumferenceCm }} cm</td>
-                  <td style="padding: 0.55rem;">
-                    <span class="badge" [class.badge-diaper]="g.zScoreWeightForAge >= -2 && g.zScoreWeightForAge <= 2" [class.badge-milestone]="g.zScoreWeightForAge < -2 || g.zScoreWeightForAge > 2">
-                      Z = {{ formatZScore(g.zScoreWeightForAge) }} ({{ classifyZScore(g.zScoreWeightForAge) }})
-                    </span>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </section>
     }
   `
 })

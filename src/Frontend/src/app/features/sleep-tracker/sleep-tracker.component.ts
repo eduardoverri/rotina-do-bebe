@@ -12,9 +12,12 @@ import { TransitionReadinessChartComponent } from './components/transition-readi
     TransitionReadinessChartComponent
   ],
   template: `
-    <app-wake-window-widget />
-    <div class="grid-2" style="margin-top: 1rem;">
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <!-- Formulário no início -->
       <app-nap-stopwatch />
+
+      <!-- Caixas informativas e tabelas recolhíveis ao final -->
+      <app-wake-window-widget />
       <app-transition-readiness-chart />
     </div>
   `
