@@ -141,7 +141,10 @@ export class RoutineStore {
   private readonly wakeTimer = inject(WakeWindowTimerService);
   private readonly realtime = inject(FamilyRealtimeService);
 
-  readonly apiBaseUrl = 'http://localhost:5000/api';
+  readonly apiBaseUrl =
+    typeof window !== 'undefined' && window.location.port === '4200'
+      ? 'http://localhost:5000/api'
+      : '/api';
   readonly isBackendConnected = signal<boolean>(false);
   readonly toastMessage = signal<string | null>(null);
   readonly activeAlertBanner = signal<{ message: string; level: 'HighPriority' | 'Urgent' | 'Emergency' } | null>(null);

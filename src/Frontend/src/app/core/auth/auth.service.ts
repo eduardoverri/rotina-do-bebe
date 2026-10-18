@@ -63,7 +63,10 @@ declare global {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly babyStore = inject(BabyStore);
-  private readonly apiBaseUrl = 'http://localhost:5000/api';
+  private readonly apiBaseUrl =
+    typeof window !== 'undefined' && window.location.port === '4200'
+      ? 'http://localhost:5000/api'
+      : '/api';
 
   readonly currentUser = signal<GoogleUserAccount | null>(this.loadStoredUser());
   readonly token = signal<string | null>(localStorage.getItem('google_jwt_token'));

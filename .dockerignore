@@ -1,0 +1,16 @@
+**/.git
+**/.vs
+**/.vscode
+**/.idea
+**/node_modules
+**/.angular
+**/dist
+**/bin
+**/obj
+**/out
+**/publish
+**/TestResults
+mongo-data/
+mongodb_data/
+*.md
+LICENSE

@@ -20,7 +20,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "http://127.0.0.1:4200")
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "http://127.0.0.1:4200",
+                "http://localhost:5000",
+                "http://localhost:8080"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -97,6 +102,8 @@ builder.Services.AddHostedService<MedicationReminderJob>();
 var app = builder.Build();
 
 app.UseCors("FrontendPolicy");
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -110,6 +117,7 @@ app.MapGet("/health", (MongoDbContext db) => Results.Ok(new
 
 app.MapBabyRoutineEndpoints();
 app.MapHub<FamilyHub>("/hubs/family");
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
