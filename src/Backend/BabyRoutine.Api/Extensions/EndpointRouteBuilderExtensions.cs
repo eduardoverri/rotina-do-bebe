@@ -197,7 +197,7 @@ public static class EndpointRouteBuilderExtensions
                         MeasuredAt = dto.BirthDate,
                         WeightGrams = dto.BirthWeightGrams,
                         HeightCm = dto.BirthLengthCm,
-                        HeadCircumferenceCm = 34.5,
+                        HeadCircumferenceCm = dto.HeadCircumferenceCm > 0 ? dto.HeadCircumferenceCm : 35.0,
                         ZScoreWeightForAge = 0.0
                     }
                 ],
@@ -927,6 +927,65 @@ public static class EndpointRouteBuilderExtensions
         .WithName("ToggleMilestoneAchievement");
 
         // =========================================================================
+        // 8.5. Evolução Antropométrica e Curvas OMS (Separado por Usuário e por Filho)
+        // =========================================================================
+        babyGroup.MapGet("/growth", async (
+            string babyId,
+            HttpContext httpContext,
+            IBabyRepository babyRepo,
+            CancellationToken ct) =>
+        {
+            var userId = httpContext.GetCurrentUserId();
+            var baby = await babyRepo.GetByIdAndUserAsync(babyId, userId, ct);
+            if (baby is null) return Results.NotFound();
+
+            return Results.Ok(baby.GrowthLogs.OrderByDescending(g => g.MeasuredAt).ToList());
+        })
+        .WithName("GetBabyGrowthLogs");
+
+        babyGroup.MapPost("/growth", async (
+            string babyId,
+            RecordGrowthLogDto dto,
+            HttpContext httpContext,
+            IBabyRepository babyRepo,
+            CancellationToken ct) =>
+        {
+            var userId = httpContext.GetCurrentUserId();
+            var baby = await babyRepo.GetByIdAndUserAsync(babyId, userId, ct);
+            if (baby is null) return Results.NotFound();
+
+            if (dto.WeightGrams <= 0 || dto.HeightCm <= 0 || dto.HeadCircumferenceCm <= 0)
+            {
+                return Results.BadRequest(new { message = "Informe valores válidos para peso, comprimento e perímetro cefálico." });
+            }
+
+            var measuredAt = dto.MeasuredAt ?? DateTime.UtcNow;
+            var effectiveDays = baby.GetCorrectedAgeDays(measuredAt);
+            var zScore = dto.ZScoreWeightForAge ?? CalculateWhoWeightForAgeZScore(baby.Gender, effectiveDays, dto.WeightGrams);
+
+            var entry = new GrowthLog
+            {
+                MeasuredAt = measuredAt,
+                WeightGrams = dto.WeightGrams,
+                HeightCm = dto.HeightCm,
+                HeadCircumferenceCm = dto.HeadCircumferenceCm,
+                ZScoreWeightForAge = Math.Round(zScore, 2)
+            };
+
+            baby.GrowthLogs.Add(entry);
+            baby.GrowthLogs = baby.GrowthLogs.OrderBy(g => g.MeasuredAt).ToList();
+
+            var latest = baby.GrowthLogs.Last();
+            baby.CurrentWeightGrams = latest.WeightGrams;
+            baby.CurrentHeightCm = latest.HeightCm;
+            baby.HeadCircumferenceCm = latest.HeadCircumferenceCm;
+
+            await babyRepo.UpdateAsync(baby, ct);
+            return Results.Created($"/api/babies/{babyId}/growth", baby);
+        })
+        .WithName("RecordBabyGrowthLog");
+
+        // =========================================================================
         // 9. Relatório Pediátrico Consolidado (Separado por Usuário e por Filho)
         // =========================================================================
         babyGroup.MapGet("/reports/pediatric-summary", async (
@@ -952,5 +1011,34 @@ public static class EndpointRouteBuilderExtensions
         .WithName("GetPediatricSummaryReport");
 
         return app;
+    }
+
+    private static double CalculateWhoWeightForAgeZScore(string gender, int ageDays, double weightGrams)
+    {
+        // Mediana (M) e Desvio-Padrão aproximado (SD) de Peso para Idade OMS (0 a 24 meses) em gramas
+        double months = Math.Clamp(ageDays / 30.4375, 0.0, 24.0);
+        bool isFemale = string.Equals(gender, "F", StringComparison.OrdinalIgnoreCase);
+
+        // Pontos de referência OMS (0, 3, 6, 9, 12, 18, 24 meses)
+        double[] refMonths = [0, 3, 6, 9, 12, 18, 24];
+        double[] medianBoys = [3346, 6376, 7934, 8901, 9647, 10938, 12151];
+        double[] sdBoys = [450, 720, 860, 960, 1040, 1180, 1320];
+        double[] medianGirls = [3232, 5845, 7297, 8225, 8948, 10231, 11477];
+        double[] sdGirls = [430, 680, 820, 920, 1000, 1140, 1280];
+
+        var medians = isFemale ? medianGirls : medianBoys;
+        var sds = isFemale ? sdGirls : sdBoys;
+
+        int i = 0;
+        while (i < refMonths.Length - 2 && months > refMonths[i + 1])
+        {
+            i++;
+        }
+
+        double t = (months - refMonths[i]) / (refMonths[i + 1] - refMonths[i]);
+        double median = medians[i] + t * (medians[i + 1] - medians[i]);
+        double sd = sds[i] + t * (sds[i + 1] - sds[i]);
+
+        return Math.Clamp((weightGrams - median) / sd, -4.0, 4.0);
     }
 }

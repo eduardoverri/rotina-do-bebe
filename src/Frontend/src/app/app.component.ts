@@ -17,6 +17,7 @@ import { FeedingTrackerComponent } from './features/feeding-tracker/feeding-trac
 import { DiapersTrackerComponent } from './features/diapers-tracker/diapers-tracker.component';
 import { HealthComponent } from './features/health-medications/health.component';
 import { MilestonesComponent } from './features/milestones/milestones.component';
+import { GrowthTrackerComponent } from './features/growth-tracker/growth-tracker.component';
 import { PediatricReportComponent } from './features/reports/pediatric-report.component';
 
 @Component({
@@ -36,6 +37,7 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
     DiapersTrackerComponent,
     HealthComponent,
     MilestonesComponent,
+    GrowthTrackerComponent,
     PediatricReportComponent
   ],
   template: `
@@ -173,6 +175,9 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
               @case ('milestones') {
                 <app-milestones />
               }
+              @case ('growth') {
+                <app-growth-tracker />
+              }
               @case ('report') {
                 <app-pediatric-report />
               }
@@ -205,6 +210,7 @@ export class AppComponent implements OnInit {
     { id: 'diapers', label: 'Fraldas', icon: '🧷' },
     { id: 'health', label: 'Saúde', icon: '💊' },
     { id: 'milestones', label: 'Marcos', icon: '🏆' },
+    { id: 'growth', label: 'Curvas OMS', icon: '📈' },
     { id: 'report', label: 'Relatório', icon: '🩺' },
     { id: 'children', label: 'Filhos', icon: '👶' }
   ];

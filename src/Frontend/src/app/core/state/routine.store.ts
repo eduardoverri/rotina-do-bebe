@@ -619,6 +619,33 @@ export class RoutineStore {
     }
   }
 
+  async logGrowthMeasurement(payload: {
+    measuredAt?: string;
+    weightGrams: number;
+    heightCm: number;
+    headCircumferenceCm: number;
+    zScoreWeightForAge?: number;
+  }): Promise<void> {
+    const babyId = this.babyStore.selectedBabyId();
+    if (!babyId) return;
+    try {
+      const updatedBaby = await firstValueFrom(
+        this.http.post<BabyModel>(`${this.apiBaseUrl}/babies/${babyId}/growth`, payload)
+      );
+      this.babyStore.updateBabyInCurrentUser(updatedBaby);
+      this.popupAlert.success(
+        'Aferição antropométrica e curva OMS registradas com sucesso.',
+        'Antropometria Registrada'
+      );
+    } catch {
+      await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/growth`, payload);
+      this.popupAlert.warning(
+        'Sem conexão com o servidor. Aferição antropométrica enfileirada para sincronização.',
+        'Modo Offline • Antropometria Enfileirada'
+      );
+    }
+  }
+
   private clearBabyState(): void {
     this.events.set([]);
     this.totalSleepMinutes.set(0);

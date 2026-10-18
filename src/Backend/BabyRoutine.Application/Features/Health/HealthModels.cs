@@ -14,3 +14,12 @@ public record ToggleMilestoneDto(
     string? Notes,
     string? MediaPhotoUrl
 );
+
+public record RecordGrowthLogDto(
+    DateTime? MeasuredAt,
+    double WeightGrams,
+    double HeightCm,
+    double HeadCircumferenceCm,
+    double? ZScoreWeightForAge
+);
+

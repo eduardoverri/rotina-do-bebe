@@ -138,6 +138,11 @@ export class BabyStore {
     }
   }
 
+  updateBabyInCurrentUser(updatedBaby: BabyModel): void {
+    const updated = this.babies().map(b => (b.id === updatedBaby.id ? updatedBaby : b));
+    this.babies.set(updated);
+  }
+
   removeBabyFromCurrentUser(babyId: string): void {
     const updated = this.babies().filter(b => b.id !== babyId);
     this.babies.set(updated);

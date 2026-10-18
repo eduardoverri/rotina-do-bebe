@@ -82,14 +82,16 @@ import { DurationPipe } from '../../shared/pipes/duration.pipe';
               </tr>
             </thead>
             <tbody>
-              @for (g of baby.growthLogs; track g.measuredAt) {
+              @for (g of baby.growthLogs; track g.measuredAt + '-' + g.weightGrams) {
                 <tr style="border-bottom: 1px solid var(--border-subtle);">
                   <td style="padding: 0.55rem;">{{ g.measuredAt | date:'dd/MM/yyyy' }}</td>
                   <td style="padding: 0.55rem; font-weight: 700;">{{ g.weightGrams }} g</td>
                   <td style="padding: 0.55rem;">{{ g.heightCm }} cm</td>
                   <td style="padding: 0.55rem;">{{ g.headCircumferenceCm }} cm</td>
                   <td style="padding: 0.55rem;">
-                    <span class="badge badge-diaper">Z = {{ g.zScoreWeightForAge > 0 ? '+' + g.zScoreWeightForAge : g.zScoreWeightForAge }} (Normal)</span>
+                    <span class="badge" [class.badge-diaper]="g.zScoreWeightForAge >= -2 && g.zScoreWeightForAge <= 2" [class.badge-milestone]="g.zScoreWeightForAge < -2 || g.zScoreWeightForAge > 2">
+                      Z = {{ g.zScoreWeightForAge > 0 ? '+' + g.zScoreWeightForAge : g.zScoreWeightForAge }} ({{ classifyZScore(g.zScoreWeightForAge) }})
+                    </span>
                   </td>
                 </tr>
               }
@@ -103,6 +105,12 @@ import { DurationPipe } from '../../shared/pipes/duration.pipe';
 export class PediatricReportComponent {
   readonly babyStore = inject(BabyStore);
   readonly routineStore = inject(RoutineStore);
+
+  classifyZScore(z: number): string {
+    if (z < -2) return 'Baixo peso para idade';
+    if (z > 2) return 'Peso elevado para idade';
+    return 'Normal';
+  }
 
   printReport(): void {
     if (typeof window !== 'undefined') {
