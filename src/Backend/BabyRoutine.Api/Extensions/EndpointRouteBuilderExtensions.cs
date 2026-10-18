@@ -29,14 +29,24 @@ public static class EndpointRouteBuilderExtensions
 
         authGroup.MapGet("/config", (GoogleAuthService googleAuth) => Results.Ok(new
         {
-            googleClientId = googleAuth.GoogleClientId ?? string.Empty
+            googleClientId = googleAuth.GoogleClientId ?? string.Empty,
+            allowClientIdConfiguration = !googleAuth.HasEnvGoogleClientId
         }))
         .WithName("GetGoogleSsoConfig");
 
         authGroup.MapPut("/config", (GoogleSsoClientConfigDto dto, GoogleAuthService googleAuth) =>
         {
+            if (googleAuth.HasEnvGoogleClientId)
+            {
+                return Results.BadRequest(new { message = "O Google Client ID já está configurado via variável de ambiente GOOGLE_CLIENT_ID." });
+            }
+
             googleAuth.SetRuntimeClientId(dto.ClientId);
-            return Results.Ok(new { googleClientId = googleAuth.GoogleClientId ?? string.Empty });
+            return Results.Ok(new
+            {
+                googleClientId = googleAuth.GoogleClientId ?? string.Empty,
+                allowClientIdConfiguration = !googleAuth.HasEnvGoogleClientId
+            });
         })
         .WithName("UpdateGoogleSsoConfig");
 

@@ -73,18 +73,22 @@ export class AuthService {
   readonly googleClientId = signal<string>(
     localStorage.getItem('google_oauth_client_id') ?? ''
   );
+  readonly allowClientIdConfig = signal<boolean>(false);
   readonly isAuthenticated = computed<boolean>(() => this.currentUser() !== null && !!this.token());
 
   async loadServerSsoConfig(): Promise<string> {
     try {
       const cfg = await firstValueFrom(
-        this.http.get<{ googleClientId: string }>(`${this.apiBaseUrl}/auth/config`)
+        this.http.get<{ googleClientId: string; allowClientIdConfiguration?: boolean }>(`${this.apiBaseUrl}/auth/config`)
       );
+      this.allowClientIdConfig.set(cfg?.allowClientIdConfiguration ?? !cfg?.googleClientId);
       if (cfg?.googleClientId) {
         this.googleClientId.set(cfg.googleClientId);
         localStorage.setItem('google_oauth_client_id', cfg.googleClientId);
       }
-    } catch {}
+    } catch {
+      this.allowClientIdConfig.set(!this.googleClientId());
+    }
     return this.googleClientId();
   }
 

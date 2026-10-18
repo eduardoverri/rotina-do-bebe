@@ -26,13 +26,20 @@ public class GoogleAuthService(
     public string JwtIssuer => configuration["Jwt:Issuer"] ?? "BabyRoutine.Api";
     public string JwtAudience => configuration["Jwt:Audience"] ?? "BabyRoutine.Frontend";
 
+    public bool HasEnvGoogleClientId =>
+        !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID"));
+
     public string? GoogleClientId
     {
         get
         {
-            var id = _runtimeClientId
-                     ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
-                     ?? configuration["Google:ClientId"];
+            var envId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+            if (!string.IsNullOrWhiteSpace(envId))
+            {
+                return envId.Trim();
+            }
+
+            var id = _runtimeClientId ?? configuration["Google:ClientId"];
             return string.IsNullOrWhiteSpace(id) || id.StartsWith("YOUR_GOOGLE_CLIENT_ID", StringComparison.OrdinalIgnoreCase)
                 ? null
                 : id.Trim();
@@ -45,7 +52,7 @@ public class GoogleAuthService(
 
     public void SetRuntimeClientId(string clientId)
     {
-        if (!string.IsNullOrWhiteSpace(clientId))
+        if (!HasEnvGoogleClientId && !string.IsNullOrWhiteSpace(clientId))
         {
             _runtimeClientId = clientId.Trim();
         }

@@ -11,10 +11,6 @@ import { RoutineStore } from '../../core/state/routine.store';
     <div style="max-width: 500px; margin: 3rem auto;">
       <section class="card" style="border-top: 5px solid var(--cat-sleep); padding: 2rem;">
         <div style="text-align: center; margin-bottom: 1.75rem;">
-          <span class="badge badge-sleep" style="margin-bottom: 0.65rem;">
-            <span aria-hidden="true">🔐</span>
-            <span>SINGLE SIGN-ON • GOOGLE IDENTITY SERVICES</span>
-          </span>
           <h1 style="font-size: 1.55rem; font-weight: 800;">Rotina do Bebê (0 a 24 Meses)</h1>
           <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.4rem;">
             Autentique-se via <strong>Google SSO</strong>. Seus filhos e registros clínicos são protegidos por JWT e isolados na sua conta Google.
@@ -38,7 +34,7 @@ import { RoutineStore } from '../../core/state/routine.store';
             <span>{{ isLoading() ? 'Autenticando via Google SSO...' : 'Continuar com o Google (SSO)' }}</span>
           </button>
 
-          @if (!authService.googleClientId()) {
+          @if (!authService.googleClientId() && authService.allowClientIdConfig()) {
             <p style="font-size: 0.8rem; color: var(--cat-milestone); margin-top: 0.75rem; font-weight: 600;">
               ⚠️ Configure o seu Google OAuth 2.0 Client ID abaixo (ou em <code>appsettings.json</code> / variável <code>GOOGLE_CLIENT_ID</code>) para habilitar o popup do Google SSO.
             </p>
@@ -54,35 +50,37 @@ import { RoutineStore } from '../../core/state/routine.store';
           </div>
         }
 
-        <!-- Configuração do Google Cloud OAuth 2.0 Client ID -->
-        <div style="margin-top: 1.25rem; text-align: center;">
-          <button
-            type="button"
-            class="btn"
-            style="min-height: 32px; font-size: 0.76rem; padding: 0.3rem 0.75rem;"
-            (click)="showClientIdConfig.set(!showClientIdConfig())">
-            ⚙️ Configurar Google OAuth 2.0 Client ID
-          </button>
+        <!-- Configuração do Google Cloud OAuth 2.0 Client ID (Exibida apenas quando GOOGLE_CLIENT_ID não está definido no ambiente) -->
+        @if (authService.allowClientIdConfig()) {
+          <div style="margin-top: 1.25rem; text-align: center;">
+            <button
+              type="button"
+              class="btn"
+              style="min-height: 32px; font-size: 0.76rem; padding: 0.3rem 0.75rem;"
+              (click)="showClientIdConfig.set(!showClientIdConfig())">
+              ⚙️ Configurar Google OAuth 2.0 Client ID
+            </button>
 
-          @if (showClientIdConfig() || !authService.googleClientId()) {
-            <div class="card-elevated" style="margin-top: 0.75rem; text-align: left;">
-              <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
-                Google Cloud OAuth 2.0 Client ID:
-              </label>
-              <div style="display: flex; gap: 0.5rem;">
-                <input
-                  type="text"
-                  class="input-field"
-                  [(ngModel)]="clientIdInput"
-                  placeholder="seu-client-id.apps.googleusercontent.com" />
-                <button type="button" class="btn btn-diaper" (click)="saveClientId()">Salvar</button>
+            @if (showClientIdConfig() || !authService.googleClientId()) {
+              <div class="card-elevated" style="margin-top: 0.75rem; text-align: left;">
+                <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
+                  Google Cloud OAuth 2.0 Client ID:
+                </label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <input
+                    type="text"
+                    class="input-field"
+                    [(ngModel)]="clientIdInput"
+                    placeholder="seu-client-id.apps.googleusercontent.com" />
+                  <button type="button" class="btn btn-diaper" (click)="saveClientId()">Salvar</button>
+                </div>
+                <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 0.4rem;">
+                  Em Google Cloud Console → APIs &amp; Services → Credentials, adicione <code>http://localhost:4200</code> em <em>Authorized JavaScript origins</em>.
+                </p>
               </div>
-              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 0.4rem;">
-                Em Google Cloud Console → APIs &amp; Services → Credentials, adicione <code>http://localhost:4200</code> em <em>Authorized JavaScript origins</em>.
-              </p>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </section>
     </div>
   `
@@ -168,7 +166,7 @@ export class GoogleLoginComponent implements AfterViewInit {
           width: 320
         });
         g.prompt();
-      } catch {}
+      } catch { }
     }
   }
 }
