@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { AuthService } from '../../core/auth/auth.service';
 import { BabyStore } from '../../core/state/baby.store';
 import { RoutineStore } from '../../core/state/routine.store';
+import { PopupAlertService } from '../../core/services/popup-alert.service';
 import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
 
 @Component({
@@ -153,7 +154,6 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
           type="button"
           class="btn btn-diaper"
           style="width: 100%;"
-          [disabled]="!name.trim() || !birthDateInput"
           (click)="createChild()">
           <span aria-hidden="true">👶</span>
           <span>Cadastrar Filho(a) e Iniciar Rotina Isolada</span>
@@ -166,6 +166,7 @@ export class ChildrenManagerComponent {
   readonly authService = inject(AuthService);
   readonly babyStore = inject(BabyStore);
   readonly routineStore = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   @Output() readonly childSelected = new EventEmitter<void>();
 
@@ -186,7 +187,38 @@ export class ChildrenManagerComponent {
   }
 
   async createChild(): Promise<void> {
-    if (!this.name.trim() || !this.birthDateInput) return;
+    if (!this.name.trim()) {
+      this.popupAlert.incompleteForm('Informe o nome do filho(a) para realizar o cadastro.');
+      return;
+    }
+    if (!this.birthDateInput) {
+      this.popupAlert.incompleteForm('Informe a data de nascimento do filho(a).');
+      return;
+    }
+    if (
+      !this.gestationalWeeks ||
+      this.gestationalWeeks < 22 ||
+      this.gestationalWeeks > 44 ||
+      this.gestationalDays === null ||
+      this.gestationalDays === undefined ||
+      this.gestationalDays < 0 ||
+      this.gestationalDays > 6
+    ) {
+      this.popupAlert.incompleteForm('Preencha as semanas e dias gestacionais com valores válidos.');
+      return;
+    }
+    if (
+      !this.currentWeightGrams ||
+      this.currentWeightGrams <= 0 ||
+      !this.currentHeightCm ||
+      this.currentHeightCm <= 0 ||
+      !this.headCircumferenceCm ||
+      this.headCircumferenceCm <= 0
+    ) {
+      this.popupAlert.incompleteForm('Preencha o peso, o comprimento e o perímetro cefálico com valores válidos.');
+      return;
+    }
+
     const created = await this.routineStore.createChildForAuthenticatedUser({
       name: this.name.trim(),
       birthDate: new Date(this.birthDateInput).toISOString(),

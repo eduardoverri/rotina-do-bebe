@@ -48,6 +48,13 @@ export class PopupAlertService {
     this.show('info', title, message, 3500, options);
   }
 
+  incompleteForm(
+    message = 'Preencha todos os campos obrigatórios do formulário antes de continuar.',
+    title = 'Formulário Incompleto'
+  ): void {
+    this.warning(message, title, { skipHistory: true });
+  }
+
   show(
     type: PopupAlertType,
     title: string,

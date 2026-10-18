@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { PopupAlertService } from '../../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-nap-stopwatch',
@@ -77,6 +78,7 @@ import { RoutineStore } from '../../../../core/state/routine.store';
 })
 export class NapStopwatchComponent {
   readonly store = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   readonly isRunning = signal(false);
   readonly elapsedSeconds = signal(0);
@@ -112,6 +114,11 @@ export class NapStopwatchComponent {
 
   async saveSleep(): Promise<void> {
     if (this.isRunning()) this.toggleTimer();
+    if (!this.durationMinutes || this.durationMinutes <= 0 || !this.sleepType || !this.sleepLocation || !this.fallingAsleepMethod) {
+      this.popupAlert.incompleteForm('Informe uma duração válida em minutos e preencha os campos da sessão de sono.');
+      return;
+    }
+
     await this.store.logSleepSession({
       sleepType: this.sleepType,
       durationMinutes: this.durationMinutes,

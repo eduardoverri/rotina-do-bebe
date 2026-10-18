@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { PopupAlertService } from '../../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-breast-timer',
@@ -120,7 +121,6 @@ import { RoutineStore } from '../../../../core/state/routine.store';
           type="button"
           class="btn btn-sleep"
           style="width: 100%;"
-          [disabled]="bottleVolumeMl() <= 0"
           (click)="saveBottleFeeding()">
           <span aria-hidden="true">🍼</span>
           <span>Registrar {{ bottleType() === 'Formula' ? 'Fórmula' : 'Leite' }} ({{ bottleVolumeMl() }} mL)</span>
@@ -143,6 +143,7 @@ import { RoutineStore } from '../../../../core/state/routine.store';
 })
 export class BreastTimerComponent {
   readonly store = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   readonly activeSide = signal<'Left' | 'Right' | 'None'>('None');
   readonly leftSeconds = signal(0);
@@ -179,6 +180,11 @@ export class BreastTimerComponent {
   }
 
   async saveFeedingSession(): Promise<void> {
+    if (this.leftSeconds() <= 0 && this.rightSeconds() <= 0) {
+      this.popupAlert.incompleteForm('Inicie o cronômetro em pelo menos uma das mamas antes de salvar a mamada.');
+      return;
+    }
+
     if (this.timerId) clearInterval(this.timerId);
     const lastSide = this.activeSide() !== 'None' ? this.activeSide() : (this.rightSeconds() >= this.leftSeconds() ? 'Right' : 'Left');
     this.activeSide.set('None');
@@ -194,7 +200,10 @@ export class BreastTimerComponent {
   }
 
   async saveBottleFeeding(): Promise<void> {
-    if (this.bottleVolumeMl() <= 0) return;
+    if (!this.bottleType() || !this.bottleVolumeMl() || this.bottleVolumeMl() <= 0) {
+      this.popupAlert.incompleteForm('Informe um volume válido em mililitros (mL) antes de salvar.');
+      return;
+    }
     await this.store.logBottleFeeding({
       feedingType: this.bottleType(),
       volumeMl: this.bottleVolumeMl()

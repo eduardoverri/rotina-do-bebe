@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BabyStore } from '../../../../core/state/baby.store';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { PopupAlertService } from '../../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-dose-calculator',
@@ -63,6 +64,7 @@ import { RoutineStore } from '../../../../core/state/routine.store';
 export class DoseCalculatorComponent {
   readonly babyStore = inject(BabyStore);
   readonly routineStore = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   readonly medicationName = signal('Dipirona Gotas (500mg/mL)');
   readonly doseMg = signal(95);
@@ -76,12 +78,26 @@ export class DoseCalculatorComponent {
   });
 
   async submitDose(): Promise<void> {
+    if (
+      !this.medicationName().trim() ||
+      !this.doseMg() ||
+      this.doseMg() <= 0 ||
+      !this.temperature ||
+      this.temperature <= 0 ||
+      !this.reason.trim()
+    ) {
+      this.popupAlert.incompleteForm(
+        'Preencha a medicação, temperatura aferida, dose solicitada e indicação clínica.'
+      );
+      return;
+    }
+
     await this.routineStore.administerMedication({
       medicationName: this.medicationName(),
       doseMg: this.doseMg(),
       dosageGiven: `${this.doseMg()} mg`,
       measuredTemperatureCelsius: this.temperature,
-      reason: this.reason
+      reason: this.reason.trim()
     });
   }
 

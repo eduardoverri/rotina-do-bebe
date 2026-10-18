@@ -114,6 +114,10 @@ export class GoogleLoginComponent implements AfterViewInit {
   }
 
   async saveClientId(): Promise<void> {
+    if (!this.clientIdInput.trim()) {
+      this.popupAlert.incompleteForm('Informe o Google Cloud OAuth 2.0 Client ID antes de salvar.');
+      return;
+    }
     await this.authService.setGoogleClientId(this.clientIdInput);
     this.tryRenderOfficialGoogleButton();
   }

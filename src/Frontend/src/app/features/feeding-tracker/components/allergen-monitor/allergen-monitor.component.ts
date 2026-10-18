@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { PopupAlertService } from '../../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-allergen-monitor',
@@ -78,15 +79,24 @@ import { RoutineStore } from '../../../../core/state/routine.store';
 })
 export class AllergenMonitorComponent {
   readonly store = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
   newAllergenName = 'Ovo Cozido (Gema e Clara)';
   initialDose = '';
 
   async startTrial(): Promise<void> {
+    if (!this.newAllergenName.trim() || !this.initialDose.trim()) {
+      this.popupAlert.incompleteForm(
+        'Informe o alérgeno e a quantidade inicial ofertada para iniciar o monitoramento de 72h.'
+      );
+      return;
+    }
+
     await this.store.startAllergenTrial({
       foodName: this.newAllergenName,
       foodCategory: 'Alérgeno Principal (Oferta Diurna)',
-      initialQuantityOffered: this.initialDose
+      initialQuantityOffered: this.initialDose.trim()
     });
+    this.initialDose = '';
   }
 
   async reportSymptom(trialId: string, type: 'hives' | 'swelling' | 'vomiting'): Promise<void> {

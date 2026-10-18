@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { PopupAlertService } from '../../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-solids-plate-selector',
@@ -228,6 +229,7 @@ import { RoutineStore } from '../../../../core/state/routine.store';
 })
 export class SolidsPlateSelectorComponent {
   readonly store = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   mealType = 'Lunch';
   acceptanceLevel = 'High';
@@ -306,6 +308,18 @@ export class SolidsPlateSelectorComponent {
   }
 
   async savePlate(): Promise<void> {
+    if (
+      (this.vegOtherActive() && !this.vegOtherText().trim()) ||
+      (this.cerealOtherActive() && !this.cerealOtherText().trim()) ||
+      (this.legumeOtherActive() && !this.legumeOtherText().trim()) ||
+      (this.proteinOtherActive() && !this.proteinOtherText().trim())
+    ) {
+      this.popupAlert.incompleteForm(
+        'Preencha a descrição do campo "Outros" nos grupos alimentares selecionados.'
+      );
+      return;
+    }
+
     const fruitsAndVegetables = this.buildGroupList(
       this.selectedVeg(),
       this.vegOtherActive(),
@@ -326,6 +340,18 @@ export class SolidsPlateSelectorComponent {
       this.proteinOtherActive(),
       this.proteinOtherText()
     );
+
+    if (
+      fruitsAndVegetables.length === 0 ||
+      cerealsAndTubers.length === 0 ||
+      legumes.length === 0 ||
+      animalProtein.length === 0
+    ) {
+      this.popupAlert.incompleteForm(
+        'Selecione pelo menos um item ou a opção "Nenhum" em cada um dos quatro grupos de alimentos.'
+      );
+      return;
+    }
 
     const allergens: string[] = [];
     for (const p of animalProtein) {

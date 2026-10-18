@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { BabyStore } from '../../core/state/baby.store';
 import { RoutineStore } from '../../core/state/routine.store';
+import { PopupAlertService } from '../../core/services/popup-alert.service';
 import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
 
 @Component({
@@ -107,7 +108,6 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
             type="button"
             class="btn btn-diaper"
             style="width: 100%;"
-            [disabled]="weightGrams() <= 0 || heightCm() <= 0 || headCircumferenceCm() <= 0"
             (click)="saveGrowthLog()">
             <span aria-hidden="true">📏</span>
             <span>Salvar Aferição na Evolução Antropométrica</span>
@@ -210,6 +210,7 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
 export class GrowthTrackerComponent implements OnInit {
   readonly babyStore = inject(BabyStore);
   readonly routineStore = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   readonly measuredAtDate = signal<string>(new Date().toISOString().slice(0, 10));
   readonly weightGrams = signal<number>(3200);
@@ -287,11 +288,24 @@ export class GrowthTrackerComponent implements OnInit {
   }
 
   async saveGrowthLog(): Promise<void> {
-    if (this.weightGrams() <= 0 || this.heightCm() <= 0 || this.headCircumferenceCm() <= 0) return;
+    if (!this.measuredAtDate()) {
+      this.popupAlert.incompleteForm('Informe a data da aferição antropométrica.');
+      return;
+    }
+    if (!this.weightGrams() || this.weightGrams() <= 0) {
+      this.popupAlert.incompleteForm('Informe o peso aferido em gramas.');
+      return;
+    }
+    if (!this.heightCm() || this.heightCm() <= 0) {
+      this.popupAlert.incompleteForm('Informe o comprimento/estatura em centímetros.');
+      return;
+    }
+    if (!this.headCircumferenceCm() || this.headCircumferenceCm() <= 0) {
+      this.popupAlert.incompleteForm('Informe o perímetro cefálico em centímetros.');
+      return;
+    }
 
-    const measuredAtIso = this.measuredAtDate()
-      ? new Date(`${this.measuredAtDate()}T12:00:00`).toISOString()
-      : new Date().toISOString();
+    const measuredAtIso = new Date(`${this.measuredAtDate()}T12:00:00`).toISOString();
 
     await this.routineStore.logGrowthMeasurement({
       measuredAt: measuredAtIso,

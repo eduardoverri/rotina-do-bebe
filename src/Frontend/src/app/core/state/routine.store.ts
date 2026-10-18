@@ -731,7 +731,7 @@ export class RoutineStore {
   }): Promise<{ ok: boolean; message: string }> {
     const babyId = this.babyStore.selectedBabyId();
     if (!babyId) {
-      this.popupAlert.warning('Selecione um filho(a) antes de registrar medicação.', 'Aviso de Validação');
+      this.popupAlert.incompleteForm('Selecione um filho(a) antes de registrar medicação.');
       return { ok: false, message: 'Selecione um filho(a) primeiro.' };
     }
     try {
