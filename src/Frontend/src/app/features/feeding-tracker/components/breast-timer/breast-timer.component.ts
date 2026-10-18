@@ -1,9 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
 
 @Component({
   selector: 'app-breast-timer',
   standalone: true,
+  imports: [FormsModule],
   template: `
     <div class="card" style="border-top: 4px solid var(--cat-feeding);">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -60,8 +62,73 @@ import { RoutineStore } from '../../../../core/state/routine.store';
         </button>
       </div>
 
+      <button
+        type="button"
+        class="btn btn-feeding"
+        style="width: 100%; margin-bottom: 1.15rem;"
+        (click)="saveFeedingSession()">
+        <span aria-hidden="true">💾</span>
+        <span>Concluir e Salvar Mamada no Peito</span>
+      </button>
+
+      <!-- Registro de Mamar Fórmula ou Leite (em Mililitros - mL) -->
+      <div class="card-elevated" style="border-top: 3px solid var(--cat-sleep); margin-bottom: 1rem;">
+        <h4 style="font-size: 0.92rem; font-weight: 800; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span aria-hidden="true">🍼</span>
+          <span>Registrar Fórmula ou Leite (mL)</span>
+        </h4>
+
+        <div class="grid-2" style="margin-bottom: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Tipo de Oferta</label>
+            <select
+              class="input-field"
+              [ngModel]="bottleType()"
+              (ngModelChange)="bottleType.set($event)">
+              <option value="Formula">Fórmula Infantil</option>
+              <option value="ExpressedMilk">Leite (Materno Ordenhado / Leite)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Volume (mL)</label>
+            <input
+              type="number"
+              class="input-field"
+              min="5"
+              max="500"
+              step="5"
+              [ngModel]="bottleVolumeMl()"
+              (ngModelChange)="bottleVolumeMl.set(+$event)" />
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;">
+          @for (vol of presetVolumes; track vol) {
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.25rem 0.55rem; min-height: 30px; font-size: 0.76rem;"
+              [class.btn-sleep]="bottleVolumeMl() === vol"
+              (click)="bottleVolumeMl.set(vol)">
+              {{ vol }} mL
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-sleep"
+          style="width: 100%;"
+          [disabled]="bottleVolumeMl() <= 0"
+          (click)="saveBottleFeeding()">
+          <span aria-hidden="true">🍼</span>
+          <span>Registrar {{ bottleType() === 'Formula' ? 'Fórmula' : 'Leite' }} ({{ bottleVolumeMl() }} mL)</span>
+        </button>
+      </div>
+
       <!-- Guia de Sinais de Saciedade (Seção 2.1) -->
-      <div class="card-elevated" style="font-size: 0.85rem; margin-bottom: 1rem;">
+      <div class="card-elevated" style="font-size: 0.85rem;">
         <div style="font-weight: 700; color: var(--cat-feeding); margin-bottom: 0.3rem;">
           ✅ Marcadores Biológicos de Saciedade (Seção 2.1):
         </div>
@@ -71,15 +138,6 @@ import { RoutineStore } from '../../../../core/state/routine.store';
           <li>Diminuição gradual da sucção e entrada em sonolência tranquila.</li>
         </ul>
       </div>
-
-      <button
-        type="button"
-        class="btn btn-feeding"
-        style="width: 100%;"
-        (click)="saveFeedingSession()">
-        <span aria-hidden="true">💾</span>
-        <span>Concluir e Salvar Mamada</span>
-      </button>
     </div>
   `
 })
@@ -90,6 +148,10 @@ export class BreastTimerComponent {
   readonly leftSeconds = signal(0);
   readonly rightSeconds = signal(0);
   private timerId?: ReturnType<typeof setInterval>;
+
+  readonly bottleType = signal<'Formula' | 'ExpressedMilk'>('Formula');
+  readonly bottleVolumeMl = signal<number>(120);
+  readonly presetVolumes = [30, 60, 90, 120, 150, 180, 210];
 
   readonly totalDurationFormatted = computed(() => {
     const total = this.leftSeconds() + this.rightSeconds();
@@ -126,6 +188,16 @@ export class BreastTimerComponent {
       rightDurationSeconds: this.rightSeconds(),
       hungerCueStage: 'Early',
       satietyCues: ['Relaxamento muscular periférico', 'Desprendimento espontâneo']
+    });
+    this.leftSeconds.set(0);
+    this.rightSeconds.set(0);
+  }
+
+  async saveBottleFeeding(): Promise<void> {
+    if (this.bottleVolumeMl() <= 0) return;
+    await this.store.logBottleFeeding({
+      feedingType: this.bottleType(),
+      volumeMl: this.bottleVolumeMl()
     });
   }
 

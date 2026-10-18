@@ -367,9 +367,13 @@ public static class EndpointRouteBuilderExtensions
                 {
                     lastFeedingSummary = $"Sólidos ({lastFeeding.Details.SolidsDetails?.MealType ?? "Refeição"}) • {agoFormatted}";
                 }
+                else if (lastFeeding.Details.FeedingType == "Formula")
+                {
+                    lastFeedingSummary = $"Fórmula ({lastFeeding.Details.FormulaVolumeMl ?? 120}mL) • {agoFormatted}";
+                }
                 else
                 {
-                    lastFeedingSummary = $"Fórmula/Leite ({lastFeeding.Details.FormulaVolumeMl ?? 120}mL) • {agoFormatted}";
+                    lastFeedingSummary = $"Leite ({lastFeeding.Details.FormulaVolumeMl ?? 120}mL) • {agoFormatted}";
                 }
             }
 

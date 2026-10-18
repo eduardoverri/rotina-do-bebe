@@ -60,11 +60,36 @@ import { RoutineStore } from '../../../../core/state/routine.store';
                 class="btn"
                 style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
                 [class.btn-diaper]="selectedVeg().includes(item)"
-                (click)="toggleItem(selectedVeg, item)">
+                (click)="toggleItem(selectedVeg, vegOtherActive, item)">
                 {{ item }}
               </button>
             }
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-diaper]="vegOtherActive()"
+              (click)="toggleOther(selectedVeg, vegOtherActive)">
+              Outros
+            </button>
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-sleep]="selectedVeg().includes('Nenhum')"
+              (click)="selectNone(selectedVeg, vegOtherActive, vegOtherText)">
+              Nenhum
+            </button>
           </div>
+          @if (vegOtherActive()) {
+            <input
+              type="text"
+              class="input-field"
+              style="margin-top: 0.55rem;"
+              [ngModel]="vegOtherText()"
+              (ngModelChange)="vegOtherText.set($event)"
+              placeholder="Descreva outros vegetais ou frutas..." />
+          }
         </div>
 
         <!-- Grupo 2: Cereais e Tubérculos -->
@@ -77,11 +102,36 @@ import { RoutineStore } from '../../../../core/state/routine.store';
                 class="btn"
                 style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
                 [class.btn-milestone]="selectedCereals().includes(item)"
-                (click)="toggleItem(selectedCereals, item)">
+                (click)="toggleItem(selectedCereals, cerealOtherActive, item)">
                 {{ item }}
               </button>
             }
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-milestone]="cerealOtherActive()"
+              (click)="toggleOther(selectedCereals, cerealOtherActive)">
+              Outros
+            </button>
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-sleep]="selectedCereals().includes('Nenhum')"
+              (click)="selectNone(selectedCereals, cerealOtherActive, cerealOtherText)">
+              Nenhum
+            </button>
           </div>
+          @if (cerealOtherActive()) {
+            <input
+              type="text"
+              class="input-field"
+              style="margin-top: 0.55rem;"
+              [ngModel]="cerealOtherText()"
+              (ngModelChange)="cerealOtherText.set($event)"
+              placeholder="Descreva outros cereais ou tubérculos..." />
+          }
         </div>
 
         <!-- Grupo 3: Leguminosas -->
@@ -94,11 +144,36 @@ import { RoutineStore } from '../../../../core/state/routine.store';
                 class="btn"
                 style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
                 [class.btn-feeding]="selectedLegumes().includes(item)"
-                (click)="toggleItem(selectedLegumes, item)">
+                (click)="toggleItem(selectedLegumes, legumeOtherActive, item)">
                 {{ item }}
               </button>
             }
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-feeding]="legumeOtherActive()"
+              (click)="toggleOther(selectedLegumes, legumeOtherActive)">
+              Outros
+            </button>
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-sleep]="selectedLegumes().includes('Nenhum')"
+              (click)="selectNone(selectedLegumes, legumeOtherActive, legumeOtherText)">
+              Nenhum
+            </button>
           </div>
+          @if (legumeOtherActive()) {
+            <input
+              type="text"
+              class="input-field"
+              style="margin-top: 0.55rem;"
+              [ngModel]="legumeOtherText()"
+              (ngModelChange)="legumeOtherText.set($event)"
+              placeholder="Descreva outras leguminosas..." />
+          }
         </div>
 
         <!-- Grupo 4: Proteínas Animais (Ferro Heme) -->
@@ -111,11 +186,36 @@ import { RoutineStore } from '../../../../core/state/routine.store';
                 class="btn"
                 style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
                 [class.btn-health]="selectedProteins().includes(item)"
-                (click)="toggleItem(selectedProteins, item)">
+                (click)="toggleItem(selectedProteins, proteinOtherActive, item)">
                 {{ item }}
               </button>
             }
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-health]="proteinOtherActive()"
+              (click)="toggleOther(selectedProteins, proteinOtherActive)">
+              Outros
+            </button>
+            <button
+              type="button"
+              class="btn"
+              style="padding: 0.35rem 0.65rem; min-height: 34px; font-size: 0.82rem;"
+              [class.btn-sleep]="selectedProteins().includes('Nenhum')"
+              (click)="selectNone(selectedProteins, proteinOtherActive, proteinOtherText)">
+              Nenhum
+            </button>
           </div>
+          @if (proteinOtherActive()) {
+            <input
+              type="text"
+              class="input-field"
+              style="margin-top: 0.55rem;"
+              [ngModel]="proteinOtherText()"
+              (ngModelChange)="proteinOtherText.set($event)"
+              placeholder="Descreva outras proteínas animais..." />
+          }
         </div>
       </div>
 
@@ -143,8 +243,21 @@ export class SolidsPlateSelectorComponent {
   readonly selectedLegumes = signal<string[]>([]);
   readonly selectedProteins = signal<string[]>([]);
 
-  toggleItem(targetSignal: ReturnType<typeof signal<string[]>>, item: string): void {
-    const current = targetSignal();
+  readonly vegOtherActive = signal<boolean>(false);
+  readonly vegOtherText = signal<string>('');
+  readonly cerealOtherActive = signal<boolean>(false);
+  readonly cerealOtherText = signal<string>('');
+  readonly legumeOtherActive = signal<boolean>(false);
+  readonly legumeOtherText = signal<string>('');
+  readonly proteinOtherActive = signal<boolean>(false);
+  readonly proteinOtherText = signal<string>('');
+
+  toggleItem(
+    targetSignal: ReturnType<typeof signal<string[]>>,
+    _otherActiveSignal: ReturnType<typeof signal<boolean>>,
+    item: string
+  ): void {
+    const current = targetSignal().filter(i => i !== 'Nenhum');
     if (current.includes(item)) {
       targetSignal.set(current.filter(i => i !== item));
     } else {
@@ -152,22 +265,83 @@ export class SolidsPlateSelectorComponent {
     }
   }
 
+  toggleOther(
+    targetSignal: ReturnType<typeof signal<string[]>>,
+    otherActiveSignal: ReturnType<typeof signal<boolean>>
+  ): void {
+    const next = !otherActiveSignal();
+    otherActiveSignal.set(next);
+    if (next) {
+      targetSignal.set(targetSignal().filter(i => i !== 'Nenhum'));
+    }
+  }
+
+  selectNone(
+    targetSignal: ReturnType<typeof signal<string[]>>,
+    otherActiveSignal: ReturnType<typeof signal<boolean>>,
+    otherTextSignal: ReturnType<typeof signal<string>>
+  ): void {
+    if (targetSignal().includes('Nenhum')) {
+      targetSignal.set([]);
+    } else {
+      otherActiveSignal.set(false);
+      otherTextSignal.set('');
+      targetSignal.set(['Nenhum']);
+    }
+  }
+
+  private buildGroupList(
+    selected: string[],
+    otherActive: boolean,
+    otherText: string
+  ): string[] {
+    const list = [...selected];
+    const custom = otherText.trim();
+    if (otherActive && custom) {
+      list.push(`Outros: ${custom}`);
+    } else if (otherActive && !custom) {
+      list.push('Outros');
+    }
+    return list;
+  }
+
   async savePlate(): Promise<void> {
+    const fruitsAndVegetables = this.buildGroupList(
+      this.selectedVeg(),
+      this.vegOtherActive(),
+      this.vegOtherText()
+    );
+    const cerealsAndTubers = this.buildGroupList(
+      this.selectedCereals(),
+      this.cerealOtherActive(),
+      this.cerealOtherText()
+    );
+    const legumes = this.buildGroupList(
+      this.selectedLegumes(),
+      this.legumeOtherActive(),
+      this.legumeOtherText()
+    );
+    const animalProtein = this.buildGroupList(
+      this.selectedProteins(),
+      this.proteinOtherActive(),
+      this.proteinOtherText()
+    );
+
     const allergens: string[] = [];
-    for (const p of this.selectedProteins()) {
+    for (const p of animalProtein) {
       if (p.includes('Ovo')) allergens.push('Ovo Cozido');
       if (p.includes('Peixe')) allergens.push('Peixe');
     }
-    for (const c of this.selectedCereals()) {
+    for (const c of cerealsAndTubers) {
       if (c.includes('Glúten')) allergens.push('Glúten (Aveia)');
     }
 
     await this.store.logSolidsPlate({
       mealType: this.mealType,
-      fruitsAndVegetables: this.selectedVeg(),
-      cerealsAndTubers: this.selectedCereals(),
-      legumes: this.selectedLegumes(),
-      animalProtein: this.selectedProteins(),
+      fruitsAndVegetables,
+      cerealsAndTubers,
+      legumes,
+      animalProtein,
       acceptanceLevel: this.acceptanceLevel,
       eatingAutonomy: this.eatingAutonomy,
       allergensPresented: allergens

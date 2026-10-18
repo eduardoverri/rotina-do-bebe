@@ -51,6 +51,7 @@ export interface RoutineEventModel {
       eatingAutonomy: string;
       allergensPresented: string[];
     };
+    formulaVolumeMl?: number;
     medicationName?: string;
     dosageGiven?: string;
     dosageMg?: number;
@@ -421,6 +422,44 @@ export class RoutineStore {
       this.popupAlert.warning(
         'Sem conexão com o servidor. Registro de mamada enfileirado para sincronização.',
         'Modo Offline • Mamada Enfileirada'
+      );
+    }
+  }
+
+  async logBottleFeeding(payload: {
+    feedingType: 'Formula' | 'ExpressedMilk';
+    volumeMl: number;
+    notes?: string;
+  }): Promise<void> {
+    const babyId = this.babyStore.selectedBabyId();
+    if (!babyId) return;
+    const label = payload.feedingType === 'Formula' ? 'Fórmula' : 'Leite';
+    const dto = {
+      category: 'Feeding',
+      timestamp: new Date().toISOString(),
+      recordedByName: this.babyStore.activeMember().name,
+      details: {
+        feedingType: payload.feedingType,
+        formulaVolumeMl: payload.volumeMl
+      },
+      notes: payload.notes ?? `${label} (${payload.volumeMl} mL).`
+    };
+
+    try {
+      const created = await firstValueFrom(
+        this.http.post<RoutineEventModel>(`${this.apiBaseUrl}/babies/${babyId}/events`, dto)
+      );
+      this.handleEventCreated(
+        created,
+        'Registro de alimentação líquida salvo com sucesso.',
+        `${label} Registrada`
+      );
+      await this.refreshAllForBaby(babyId);
+    } catch {
+      await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/events`, dto);
+      this.popupAlert.warning(
+        'Sem conexão com o servidor. Registro enfileirado para sincronização.',
+        'Modo Offline • Registro Enfileirado'
       );
     }
   }
