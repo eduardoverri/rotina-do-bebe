@@ -6,36 +6,27 @@ import { RoutineStore } from '../../../../core/state/routine.store';
   selector: 'app-interval-countdown',
   standalone: true,
   template: `
-    <details class="card collapsible-card">
-      <summary class="collapsible-summary">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; flex: 1;">
-          <span class="section-title" style="margin-bottom: 0;">
-            <span aria-hidden="true">⏳</span>
-            <span>Suplementação Profilática Contínua (Seção 1.2 — Vitamina D & Ferro)</span>
-          </span>
-          <span class="badge badge-diaper">{{ babyStore.activeBaby().activeMedications.length }} suplemento(s)</span>
-        </div>
-      </summary>
+    <div class="card">
+      <h3 class="section-title">
+        <span aria-hidden="true">⏳</span>
+        <span>Suplementação Profilática Contínua (Seção 1.2 — Vitamina D & Ferro)</span>
+      </h3>
 
-      <div class="collapsible-body">
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          @for (med of babyStore.activeBaby().activeMedications; track med.name) {
-            <div class="card-elevated" style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-              <div>
-                <div style="font-weight: 800;">{{ med.name }}</div>
-                <div style="font-size: 0.84rem; color: var(--text-secondary);">
-                  Posologia: {{ med.dose }} • {{ med.frequency }}
-                </div>
-              </div>
-              <button type="button" class="btn btn-diaper" style="min-height: 38px;" (click)="logDailySupplement(med.name, med.dose)">
-                <span aria-hidden="true">✅</span>
-                <span>Confirmar Dose de Hoje</span>
-              </button>
+      @for (med of babyStore.activeBaby().activeMedications; track med.name) {
+        <div class="card-elevated" style="margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <div>
+            <div style="font-weight: 800;">{{ med.name }}</div>
+            <div style="font-size: 0.84rem; color: var(--text-secondary);">
+              Posologia: {{ med.dose }} • {{ med.frequency }}
             </div>
-          }
+          </div>
+          <button type="button" class="btn btn-diaper" style="min-height: 38px;" (click)="logDailySupplement(med.name, med.dose)">
+            <span aria-hidden="true">✅</span>
+            <span>Confirmar Dose de Hoje</span>
+          </button>
         </div>
-      </div>
-    </details>
+      }
+    </div>
   `
 })
 export class IntervalCountdownComponent {

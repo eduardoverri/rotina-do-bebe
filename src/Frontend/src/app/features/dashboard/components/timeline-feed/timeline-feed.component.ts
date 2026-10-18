@@ -7,70 +7,67 @@ import { RoutineEventModel, RoutineStore } from '../../../../core/state/routine.
   standalone: true,
   imports: [DatePipe],
   template: `
-    <details class="card collapsible-card" style="margin-top: 1rem;">
-      <summary class="collapsible-summary">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; flex: 1;">
-          <span class="section-title" style="margin-bottom: 0;">
+    <section class="card" style="margin-top: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+        <div>
+          <h3 class="section-title" style="margin-bottom: 0.15rem;">
             <span aria-hidden="true">📋</span>
             <span>Ficha Diária de Registro Sintético (Linha do Tempo Cronológica)</span>
-          </span>
-          <span class="badge">
-            <span aria-hidden="true">🕒</span>
-            <span>{{ store.events().length }} eventos registrados</span>
-          </span>
+          </h3>
+          <p style="font-size: 0.84rem; color: var(--text-secondary);">
+            Modelo estruturado da Seção 7 do Guia Completo com alertas clínicos e rastreabilidade por cuidador.
+          </p>
         </div>
-      </summary>
-
-      <div class="collapsible-body">
-        <p style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 0.85rem;">
-          Modelo estruturado da Seção 7 do Guia Completo com alertas clínicos e rastreabilidade por cuidador.
-        </p>
-
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--border-strong); text-align: left;">
-                <th style="padding: 0.65rem 0.5rem;">Horário</th>
-                <th style="padding: 0.65rem 0.5rem;">Categoria</th>
-                <th style="padding: 0.65rem 0.5rem;">Evento / Detalhes Clínicos</th>
-                <th style="padding: 0.65rem 0.5rem;">Observações / Alertas</th>
-                <th style="padding: 0.65rem 0.5rem;">Cuidador</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (ev of store.events(); track ev.id) {
-                <tr style="border-bottom: 1px solid var(--border-subtle);">
-                  <td class="mono-timer" style="padding: 0.75rem 0.5rem; font-weight: 700; white-space: nowrap;">
-                    {{ ev.timestamp | date:'HH:mm' }}
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">
-                    <span class="badge" [class]="getCategoryBadgeClass(ev.category)">
-                      <span aria-hidden="true">{{ getCategoryIcon(ev.category) }}</span>
-                      <span>{{ getCategoryLabel(ev.category) }}</span>
-                    </span>
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; font-weight: 600;">
-                    {{ formatEventDetails(ev) }}
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem;">
-                    @if (ev.clinicalFlags.isRedFlagAlert) {
-                      <div style="color: var(--cat-health); font-weight: 700;">
-                        <span aria-hidden="true">🚨</span> {{ ev.clinicalFlags.alertMessage }}
-                      </div>
-                    } @else {
-                      <span style="color: var(--text-secondary);">{{ ev.notes || 'Sem intercorrências' }}</span>
-                    }
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; font-size: 0.82rem; color: var(--text-muted);">
-                    {{ ev.recordedByName }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+        <span class="badge">
+          <span aria-hidden="true">🕒</span>
+          <span>{{ store.events().length }} eventos registrados</span>
+        </span>
       </div>
-    </details>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-strong); text-align: left;">
+              <th style="padding: 0.65rem 0.5rem;">Horário</th>
+              <th style="padding: 0.65rem 0.5rem;">Categoria</th>
+              <th style="padding: 0.65rem 0.5rem;">Evento / Detalhes Clínicos</th>
+              <th style="padding: 0.65rem 0.5rem;">Observações / Alertas</th>
+              <th style="padding: 0.65rem 0.5rem;">Cuidador</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ev of store.events(); track ev.id) {
+              <tr style="border-bottom: 1px solid var(--border-subtle);">
+                <td class="mono-timer" style="padding: 0.75rem 0.5rem; font-weight: 700; white-space: nowrap;">
+                  {{ ev.timestamp | date:'HH:mm' }}
+                </td>
+                <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">
+                  <span class="badge" [class]="getCategoryBadgeClass(ev.category)">
+                    <span aria-hidden="true">{{ getCategoryIcon(ev.category) }}</span>
+                    <span>{{ getCategoryLabel(ev.category) }}</span>
+                  </span>
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-weight: 600;">
+                  {{ formatEventDetails(ev) }}
+                </td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  @if (ev.clinicalFlags.isRedFlagAlert) {
+                    <div style="color: var(--cat-health); font-weight: 700;">
+                      <span aria-hidden="true">🚨</span> {{ ev.clinicalFlags.alertMessage }}
+                    </div>
+                  } @else {
+                    <span style="color: var(--text-secondary);">{{ ev.notes || 'Sem intercorrências' }}</span>
+                  }
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-size: 0.82rem; color: var(--text-muted);">
+                  {{ ev.recordedByName }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
   `
 })
 export class TimelineFeedComponent {

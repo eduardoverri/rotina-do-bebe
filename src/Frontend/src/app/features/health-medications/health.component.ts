@@ -12,14 +12,11 @@ import { VaccineCardComponent } from './components/vaccine-card/vaccine-card.com
     VaccineCardComponent
   ],
   template: `
-    <div style="display: flex; flex-direction: column; gap: 1rem;">
-      <!-- Formulário no início -->
+    <div class="grid-2">
       <app-dose-calculator />
-
-      <!-- Listas recolhíveis ao final -->
       <app-interval-countdown />
-      <app-vaccine-card />
     </div>
+    <app-vaccine-card />
   `
 })
 export class HealthComponent {}
