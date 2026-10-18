@@ -255,7 +255,8 @@ export class RoutineStore {
       await this.refreshAllForBaby(created.id);
       this.popupAlert.success(
         'Cadastro de filho(a) realizado com sucesso.',
-        'Cadastro de Filho(a)'
+        'Cadastro de Filho(a)',
+        { babyId: created.id }
       );
       return created;
     } catch {
@@ -270,6 +271,7 @@ export class RoutineStore {
   async deleteChildForAuthenticatedUser(babyId: string): Promise<void> {
     try {
       await firstValueFrom(this.http.delete(`${this.apiBaseUrl}/babies/${babyId}`));
+      this.popupAlert.clearHistoryForBaby(babyId);
       this.babyStore.removeBabyFromCurrentUser(babyId);
       const nextBabyId = this.babyStore.selectedBabyId();
       if (nextBabyId) {

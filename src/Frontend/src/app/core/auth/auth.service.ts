@@ -117,10 +117,6 @@ export class AuthService {
       return true;
     } catch {
       this.signOut(false);
-      this.popupAlert.warning(
-        'Sua sessão expirou ou é inválida. Faça login novamente.',
-        'Sessão Expirada'
-      );
       return false;
     }
   }
@@ -185,7 +181,7 @@ export class AuthService {
     });
   }
 
-  signOut(notify = true): void {
+  signOut(_notify = true): void {
     try {
       window.google?.accounts?.id?.disableAutoSelect();
     } catch {}
@@ -196,9 +192,6 @@ export class AuthService {
     this.token.set(null);
     this.currentUser.set(null);
     this.babyStore.clearSession();
-    if (notify) {
-      this.popupAlert.info('Você saiu da sua conta Google com segurança.', 'Sessão Encerrada');
-    }
   }
 
   async setGoogleClientId(clientId: string): Promise<void> {
@@ -211,12 +204,14 @@ export class AuthService {
       );
       this.popupAlert.success(
         'Configuração de autenticação atualizada com sucesso.',
-        'Configuração Salva'
+        'Configuração Salva',
+        { skipHistory: true }
       );
     } catch {
       this.popupAlert.warning(
         'Configuração salva localmente no navegador, mas não foi possível sincronizar com o servidor.',
-        'Configuração Local'
+        'Configuração Local',
+        { skipHistory: true }
       );
     }
   }
@@ -236,10 +231,6 @@ export class AuthService {
     this.token.set(jwtToken);
     this.currentUser.set(user);
     this.babyStore.setAuthenticatedUserBabies(user.id, familyName, inviteCode, babies);
-    this.popupAlert.success(
-      'Autenticação realizada e conta sincronizada com sucesso.',
-      'Autenticação Concluída'
-    );
   }
 
   private loadStoredUser(): GoogleUserAccount | null {

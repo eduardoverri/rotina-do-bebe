@@ -1,10 +1,12 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DatePipe } from '@angular/common';
 import { AuthService } from './core/auth/auth.service';
 import { BabyStore } from './core/state/baby.store';
 import { RoutineStore } from './core/state/routine.store';
 import { OfflineSyncService } from './core/services/offline-sync.service';
 import { FamilyRealtimeService } from './core/services/family-realtime.service';
+import { PopupAlertService, PopupAlertType } from './core/services/popup-alert.service';
 import { BabyAgePipe } from './shared/pipes/baby-age.pipe';
 import { NightModeToggleComponent } from './shared/components/night-mode-toggle/night-mode-toggle.component';
 import { AlertBannerComponent } from './shared/components/alert-banner/alert-banner.component';
@@ -25,6 +27,7 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
   standalone: true,
   imports: [
     FormsModule,
+    DatePipe,
     BabyAgePipe,
     NightModeToggleComponent,
     AlertBannerComponent,
@@ -74,6 +77,26 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
               </select>
             }
 
+            @if (authService.isAuthenticated() && babyStore.hasBabies()) {
+              <button
+                type="button"
+                class="btn"
+                style="position: relative; min-height: 36px; padding: 0 0.55rem; border-radius: 11px; gap: 0.25rem;"
+                (click)="toggleAlertsPanel()"
+                [attr.aria-expanded]="alertsOpen()"
+                aria-label="Histórico dos últimos 100 alertas do bebê"
+                title="Últimos 100 alertas do bebê">
+                <span aria-hidden="true" style="font-size: 1rem;">🔔</span>
+                @if (popupAlert.activeBabyAlerts().length > 0) {
+                  <span
+                    class="badge badge-sleep"
+                    style="padding: 0.1rem 0.38rem; font-size: 0.68rem;">
+                    {{ popupAlert.activeBabyAlerts().length }}
+                  </span>
+                }
+              </button>
+            }
+
             <app-night-mode-toggle />
 
             @if (authService.isAuthenticated()) {
@@ -81,7 +104,7 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
                 type="button"
                 class="btn"
                 style="min-height: 36px; width: 38px; padding: 0; border-radius: 11px;"
-                (click)="menuOpen.set(!menuOpen())"
+                (click)="toggleMenuPanel()"
                 [attr.aria-expanded]="menuOpen()"
                 aria-label="Abrir menu de navegação e conta">
                 <span aria-hidden="true" style="font-size: 1.1rem;">{{ menuOpen() ? '✕' : '☰' }}</span>
@@ -104,6 +127,67 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
               </button>
             }
           </nav>
+
+          <!-- Painel no Cabeçalho: Lista dos Últimos 100 Alertas por Bebê (com Data e Hora) -->
+          @if (alertsOpen() && babyStore.hasBabies()) {
+            <div
+              class="card-elevated"
+              style="margin-top: 0.65rem; display: flex; flex-direction: column; gap: 0.6rem; max-height: 340px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="font-size: 0.82rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                  <span aria-hidden="true">🔔</span>
+                  <span>Últimos Alertas • {{ babyStore.activeBaby().name }} ({{ popupAlert.activeBabyAlerts().length }}/100)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  @if (popupAlert.activeBabyAlerts().length > 0) {
+                    <button
+                      type="button"
+                      class="btn"
+                      style="min-height: 30px; padding: 0.2rem 0.55rem; font-size: 0.72rem;"
+                      (click)="popupAlert.clearHistoryForBaby(babyStore.selectedBabyId())">
+                      <span>Limpar</span>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn"
+                    style="min-height: 30px; padding: 0.2rem 0.55rem; font-size: 0.72rem;"
+                    (click)="alertsOpen.set(false)"
+                    aria-label="Fechar histórico de alertas">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              @if (popupAlert.activeBabyAlerts().length === 0) {
+                <div style="font-size: 0.8rem; color: var(--text-secondary); padding: 0.65rem 0; text-align: center;">
+                  Nenhum alerta registrado para {{ babyStore.activeBaby().name }}.
+                </div>
+              } @else {
+                <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 0.45rem; padding-right: 0.2rem;">
+                  @for (item of popupAlert.activeBabyAlerts(); track item.id) {
+                    <div
+                      class="card"
+                      style="margin-bottom: 0; padding: 0.55rem 0.75rem; border-left: 4px solid var(--cat-sleep);"
+                      [style.border-left-color]="getAlertColor(item.type)">
+                      <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 0.3rem;">
+                          <span aria-hidden="true">{{ getAlertIcon(item.type) }}</span>
+                          <span>{{ item.title }}</span>
+                        </span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 700;">
+                          {{ item.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
+                        </span>
+                      </div>
+                      <div style="font-size: 0.8rem; margin-top: 0.2rem; color: var(--text-primary); font-weight: 600;">
+                        {{ item.message }}
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
 
           <!-- Gaveta / Menu Expandido no Cabeçalho (Navegação Completa + Conta Google + Seletor de Filhos) -->
           @if (menuOpen()) {
@@ -199,9 +283,11 @@ export class AppComponent implements OnInit {
   readonly routineStore = inject(RoutineStore);
   readonly offlineSync = inject(OfflineSyncService);
   readonly realtime = inject(FamilyRealtimeService);
+  readonly popupAlert = inject(PopupAlertService);
 
   readonly activeTab = signal<string>('dashboard');
   readonly menuOpen = signal<boolean>(false);
+  readonly alertsOpen = signal<boolean>(false);
 
   readonly tabs = [
     { id: 'dashboard', label: 'Início', icon: '📊' },
@@ -227,6 +313,49 @@ export class AppComponent implements OnInit {
   selectTab(tabId: string): void {
     this.activeTab.set(tabId);
     this.menuOpen.set(false);
+    this.alertsOpen.set(false);
+  }
+
+  toggleAlertsPanel(): void {
+    const next = !this.alertsOpen();
+    this.alertsOpen.set(next);
+    if (next) {
+      this.menuOpen.set(false);
+    }
+  }
+
+  toggleMenuPanel(): void {
+    const next = !this.menuOpen();
+    this.menuOpen.set(next);
+    if (next) {
+      this.alertsOpen.set(false);
+    }
+  }
+
+  getAlertIcon(type: PopupAlertType): string {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'error':
+        return '🚨';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+    }
+  }
+
+  getAlertColor(type: PopupAlertType): string {
+    switch (type) {
+      case 'success':
+        return 'var(--cat-diaper)';
+      case 'error':
+        return 'var(--cat-health)';
+      case 'warning':
+        return 'var(--cat-milestone)';
+      case 'info':
+        return 'var(--cat-sleep)';
+    }
   }
 
   async onUserAuthenticated(): Promise<void> {
@@ -240,6 +369,7 @@ export class AppComponent implements OnInit {
 
   switchGoogleAccount(): void {
     this.menuOpen.set(false);
+    this.alertsOpen.set(false);
     this.authService.signOut();
   }
 }

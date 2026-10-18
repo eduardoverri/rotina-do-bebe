@@ -107,7 +107,7 @@ export class GoogleLoginComponent implements AfterViewInit {
       this.loggedIn.emit();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha na autenticação Google SSO.';
-      this.popupAlert.error(msg, 'Erro de Autenticação Google SSO');
+      this.popupAlert.error(msg, 'Erro de Autenticação Google SSO', { skipHistory: true });
     } finally {
       this.isLoading.set(false);
     }
@@ -147,7 +147,8 @@ export class GoogleLoginComponent implements AfterViewInit {
             } catch {
               this.popupAlert.error(
                 'Falha ao validar a credencial de autenticação no servidor.',
-                'Erro de Autenticação'
+                'Erro de Autenticação',
+                { skipHistory: true }
               );
             } finally {
               this.isLoading.set(false);
