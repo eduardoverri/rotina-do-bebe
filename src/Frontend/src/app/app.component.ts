@@ -359,6 +359,7 @@ export class AppComponent implements OnInit {
   }
 
   async onUserAuthenticated(): Promise<void> {
+    await this.routineStore.initialize();
     this.activeTab.set(this.babyStore.hasBabies() ? 'dashboard' : 'children');
   }
 

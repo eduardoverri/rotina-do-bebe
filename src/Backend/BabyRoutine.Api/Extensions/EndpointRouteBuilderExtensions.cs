@@ -101,8 +101,7 @@ public static class EndpointRouteBuilderExtensions
             IBabyRepository babyRepo,
             CancellationToken ct) =>
         {
-            var userId = httpContext.GetCurrentUserId();
-            var user = await userRepo.GetByIdAsync(userId, ct);
+            var user = await httpContext.GetOrRestoreCurrentUserAsync(userRepo, ct);
             if (user is null) return Results.Unauthorized();
 
             var family = await familyRepo.GetOrCreateFamilyForUserAsync(user, ct);
@@ -113,7 +112,7 @@ public static class EndpointRouteBuilderExtensions
         .WithName("GetCurrentAuthenticatedUser");
 
         // =========================================================================
-        // 1. Gestão de Família e Filhos Isolados por Usuário Google
+        // 1. Gestão de Família e Filhos Isolados por Usuário Google + Sincronização Pós-Deploy
         // =========================================================================
         api.MapGet("/families/current", async (
             HttpContext httpContext,
@@ -122,8 +121,7 @@ public static class EndpointRouteBuilderExtensions
             IBabyRepository babyRepo,
             CancellationToken ct) =>
         {
-            var userId = httpContext.GetCurrentUserId();
-            var user = await userRepo.GetByIdAsync(userId, ct);
+            var user = await httpContext.GetOrRestoreCurrentUserAsync(userRepo, ct);
             if (user is null) return Results.Unauthorized();
 
             var family = await familyRepo.GetOrCreateFamilyForUserAsync(user, ct);
@@ -133,6 +131,128 @@ public static class EndpointRouteBuilderExtensions
         .RequireAuthorization()
         .WithName("GetCurrentFamily")
         .WithSummary("Retorna a família do usuário autenticado e apenas os filhos vinculados a esta conta Google");
+
+        api.MapPost("/sync/restore", async (
+            HttpContext httpContext,
+            RestoreUserStateRequestDto dto,
+            IUserRepository userRepo,
+            IFamilyRepository familyRepo,
+            IBabyRepository babyRepo,
+            IRoutineEventRepository eventRepo,
+            IAllergenTrialRepository allergenRepo,
+            IMilestoneRepository milestoneRepo,
+            CancellationToken ct) =>
+        {
+            var user = await httpContext.GetOrRestoreCurrentUserAsync(userRepo, ct);
+            if (user is null) return Results.Unauthorized();
+
+            var family = await familyRepo.GetOrCreateFamilyForUserAsync(user, ct);
+
+            if (dto.Babies is { Count: > 0 })
+            {
+                foreach (var incoming in dto.Babies)
+                {
+                    if (string.IsNullOrWhiteSpace(incoming.Name)) continue;
+
+                    if (string.IsNullOrWhiteSpace(incoming.Id) || !ObjectId.TryParse(incoming.Id, out _))
+                    {
+                        incoming.Id = ObjectId.GenerateNewId().ToString();
+                    }
+
+                    incoming.OwnerUserId = user.Id;
+                    incoming.FamilyId = user.FamilyId;
+
+                    var existing = await babyRepo.GetByIdAndUserAsync(incoming.Id, user.Id, ct);
+                    if (existing is not null)
+                    {
+                        var mergedLogs = existing.GrowthLogs
+                            .Concat(incoming.GrowthLogs ?? [])
+                            .GroupBy(g => $"{g.MeasuredAt:yyyy-MM-ddTHH:mm}_{g.WeightGrams}_{g.HeightCm}_{g.HeadCircumferenceCm}")
+                            .Select(g => g.First())
+                            .OrderBy(g => g.MeasuredAt)
+                            .ToList();
+
+                        if (mergedLogs.Count > 0)
+                        {
+                            existing.GrowthLogs = mergedLogs;
+                            var latest = mergedLogs.Last();
+                            existing.CurrentWeightGrams = latest.WeightGrams;
+                            existing.CurrentHeightCm = latest.HeightCm;
+                            existing.HeadCircumferenceCm = latest.HeadCircumferenceCm;
+                        }
+                        else
+                        {
+                            if (incoming.CurrentWeightGrams > 0) existing.CurrentWeightGrams = incoming.CurrentWeightGrams;
+                            if (incoming.CurrentHeightCm > 0) existing.CurrentHeightCm = incoming.CurrentHeightCm;
+                            if (incoming.HeadCircumferenceCm > 0) existing.HeadCircumferenceCm = incoming.HeadCircumferenceCm;
+                        }
+
+                        await babyRepo.UpdateAsync(existing, ct);
+                    }
+                    else
+                    {
+                        if (incoming.Vaccines is null or { Count: 0 })
+                        {
+                            incoming.Vaccines = SeedData.CreateDefaultVaccines();
+                        }
+                        if (incoming.GrowthLogs is null or { Count: 0 })
+                        {
+                            incoming.GrowthLogs =
+                            [
+                                new GrowthLog
+                                {
+                                    MeasuredAt = incoming.BirthDate,
+                                    WeightGrams = incoming.BirthWeightGrams > 0 ? incoming.BirthWeightGrams : incoming.CurrentWeightGrams,
+                                    HeightCm = incoming.BirthLengthCm > 0 ? incoming.BirthLengthCm : incoming.CurrentHeightCm,
+                                    HeadCircumferenceCm = incoming.HeadCircumferenceCm > 0 ? incoming.HeadCircumferenceCm : 35.0,
+                                    ZScoreWeightForAge = 0.0
+                                }
+                            ];
+                        }
+                        await babyRepo.InsertAsync(incoming, ct);
+                        await milestoneRepo.GetByBabyIdAsync(user.Id, incoming.Id, ct);
+                    }
+                }
+            }
+
+            if (dto.RoutineEvents is { Count: > 0 })
+            {
+                foreach (var ev in dto.RoutineEvents)
+                {
+                    if (string.IsNullOrWhiteSpace(ev.BabyId)) continue;
+                    ev.OwnerUserId = user.Id;
+                    ev.FamilyId = user.FamilyId;
+                    ev.RecordedByUserId = user.Id;
+                    await eventRepo.UpsertAsync(ev, ct);
+                }
+            }
+
+            if (dto.AllergenTrials is { Count: > 0 })
+            {
+                foreach (var trial in dto.AllergenTrials)
+                {
+                    if (string.IsNullOrWhiteSpace(trial.BabyId)) continue;
+                    trial.OwnerUserId = user.Id;
+                    await allergenRepo.UpdateAsync(trial, ct);
+                }
+            }
+
+            if (dto.Milestones is { Count: > 0 })
+            {
+                foreach (var ms in dto.Milestones)
+                {
+                    if (string.IsNullOrWhiteSpace(ms.BabyId) || string.IsNullOrWhiteSpace(ms.MilestoneCode)) continue;
+                    ms.OwnerUserId = user.Id;
+                    await milestoneRepo.UpdateAsync(ms, ct);
+                }
+            }
+
+            var babies = await babyRepo.GetByOwnerUserIdAsync(user.Id, ct);
+            return Results.Ok(new { user, family, babies });
+        })
+        .RequireAuthorization()
+        .WithName("RestoreUserStateAfterDeploy")
+        .WithSummary("Sincroniza e restaura filhos e registros do usuário caso o container tenha sido recriado em novo deploy");
 
         api.MapGet("/babies", async (
             HttpContext httpContext,
@@ -156,8 +276,7 @@ public static class EndpointRouteBuilderExtensions
             IMilestoneRepository milestoneRepo,
             CancellationToken ct) =>
         {
-            var userId = httpContext.GetCurrentUserId();
-            var user = await userRepo.GetByIdAsync(userId, ct);
+            var user = await httpContext.GetOrRestoreCurrentUserAsync(userRepo, ct);
             if (user is null) return Results.Unauthorized();
 
             if (string.IsNullOrWhiteSpace(dto.Name))

@@ -38,3 +38,10 @@ public record CreateChildRequestDto(
     string? PediatricianCrm = null,
     string? PediatricianPhone = null
 );
+
+public record RestoreUserStateRequestDto(
+    List<BabyRoutine.Application.Common.Models.Baby>? Babies = null,
+    List<BabyRoutine.Application.Common.Models.RoutineEvent>? RoutineEvents = null,
+    List<BabyRoutine.Application.Common.Models.AllergenTrial>? AllergenTrials = null,
+    List<BabyRoutine.Application.Common.Models.MilestoneProgress>? Milestones = null
+);

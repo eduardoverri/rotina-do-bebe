@@ -112,12 +112,15 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
     public ApiIntegrationTests(WebApplicationFactory<Program> factory)
     {
+        var tempStoreFile = Path.Combine(Path.GetTempPath(), $"babyroutine-test-{Guid.NewGuid():N}.json");
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IGoogleSsoValidator>();
                 services.AddSingleton<IGoogleSsoValidator, TestGoogleSsoValidator>();
+                services.RemoveAll<BabyRoutine.Infrastructure.Persistence.Repositories.InMemoryDataStore>();
+                services.AddSingleton(new BabyRoutine.Infrastructure.Persistence.Repositories.InMemoryDataStore(tempStoreFile));
             });
         });
         _client = _factory.CreateClient();
@@ -252,6 +255,70 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
         var forbiddenRes = await clientB.GetAsync($"/api/babies/{child1.Id}/timeline");
         Assert.Equal(HttpStatusCode.NotFound, forbiddenRes.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostDeploy_PreservesUserSessionAndRestoresChildrenAndRecords()
+    {
+        // 1. Deploy inicial: usuário autentica, cria filho e registra eventos
+        var loginRes = await _client.PostAsJsonAsync("/api/auth/google", new GoogleLoginRequestDto(
+            IdToken: "test-google-id-token:sub-deploy-user:deploy.user@example.com:Deploy User"
+        ));
+        Assert.Equal(HttpStatusCode.OK, loginRes.StatusCode);
+        var loginPayload = await loginRes.Content.ReadFromJsonAsync<JsonElement>();
+        var token = loginPayload.GetProperty("token").GetString()!;
+
+        using var client1 = _factory.CreateClient();
+        client1.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var createRes = await client1.PostAsJsonAsync("/api/babies", new CreateChildRequestDto(
+            Name: "Persistent Baby",
+            BirthDate: DateTime.UtcNow.AddDays(-90),
+            GestationalWeeks: 39,
+            GestationalDays: 0,
+            Gender: "F",
+            BirthWeightGrams: 3250,
+            BirthLengthCm: 49.0,
+            CurrentWeightGrams: 5800,
+            CurrentHeightCm: 59.5,
+            HeadCircumferenceCm: 40.2,
+            BloodType: "A+"
+        ));
+        var baby = (await createRes.Content.ReadFromJsonAsync<Baby>())!;
+
+        var diaperRes = await client1.PostAsJsonAsync($"/api/babies/{baby.Id}/diapers/quick",
+            new QuickDiaperDto("U2", 2, null, null, false, false, true, "Antes do deploy"));
+        var eventItem = (await diaperRes.Content.ReadFromJsonAsync<RoutineEvent>())!;
+
+        // 2. Simula novo deploy em container stateless (novo InMemoryDataStore vazio)
+        var freshStoreFile = Path.Combine(Path.GetTempPath(), $"babyroutine-fresh-deploy-{Guid.NewGuid():N}.json");
+        using var redeployedFactory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IGoogleSsoValidator>();
+                services.AddSingleton<IGoogleSsoValidator, TestGoogleSsoValidator>();
+                services.RemoveAll<BabyRoutine.Infrastructure.Persistence.Repositories.InMemoryDataStore>();
+                services.AddSingleton(new BabyRoutine.Infrastructure.Persistence.Repositories.InMemoryDataStore(freshStoreFile));
+            });
+        });
+
+        using var clientAfterDeploy = redeployedFactory.CreateClient();
+        clientAfterDeploy.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // /api/auth/me deve reconstruir o usuário a partir do JWT válido (200 OK, sem deslogar)
+        var meRes = await clientAfterDeploy.GetAsync("/api/auth/me");
+        Assert.Equal(HttpStatusCode.OK, meRes.StatusCode);
+
+        // /api/sync/restore sincroniza filhos e registros do backup local para o novo container
+        var restoreRes = await clientAfterDeploy.PostAsJsonAsync("/api/sync/restore", new RestoreUserStateRequestDto(
+            Babies: [baby],
+            RoutineEvents: [eventItem]
+        ));
+        Assert.Equal(HttpStatusCode.OK, restoreRes.StatusCode);
+
+        var timelineAfterDeploy = await clientAfterDeploy.GetFromJsonAsync<JsonElement>($"/api/babies/{baby.Id}/timeline");
+        Assert.Single(timelineAfterDeploy.GetProperty("events").EnumerateArray());
     }
 
     private sealed class TestGoogleSsoValidator : IGoogleSsoValidator

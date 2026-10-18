@@ -14,28 +14,44 @@ public class MongoDbContext
     public MongoDbContext(IConfiguration configuration, ILogger<MongoDbContext> logger)
     {
         _logger = logger;
-        var connectionString = configuration.GetConnectionString("MongoDb");
-        var databaseName = configuration["MongoDb:DatabaseName"] ?? "baby_routine_db";
+        var connectionString = Environment.GetEnvironmentVariable("MONGODB_URI")
+                               ?? Environment.GetEnvironmentVariable("MONGO_URL")
+                               ?? Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING")
+                               ?? configuration.GetConnectionString("MongoDb")
+                               ?? configuration["MongoDb:ConnectionString"];
+        var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE")
+                           ?? configuration["MongoDb:DatabaseName"]
+                           ?? "baby_routine_db";
 
         if (!string.IsNullOrWhiteSpace(connectionString) &&
             !connectionString.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
-                var settings = MongoClientSettings.FromConnectionString(connectionString);
-                settings.ServerSelectionTimeout = TimeSpan.FromSeconds(2);
-                settings.ConnectTimeout = TimeSpan.FromSeconds(2);
+                var mongoUrl = new MongoUrl(connectionString);
+                if (!string.IsNullOrWhiteSpace(mongoUrl.DatabaseName))
+                {
+                    databaseName = mongoUrl.DatabaseName;
+                }
+
+                var isLocalhost = connectionString.Contains("localhost", StringComparison.OrdinalIgnoreCase) ||
+                                  connectionString.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase);
+                var timeout = isLocalhost ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(6);
+
+                var settings = MongoClientSettings.FromUrl(mongoUrl);
+                settings.ServerSelectionTimeout = timeout;
+                settings.ConnectTimeout = timeout;
                 var client = new MongoClient(settings);
                 _database = client.GetDatabase(databaseName);
                 _database.RunCommand((Command<MongoDB.Bson.BsonDocument>)"{ping:1}");
                 IsMongoConnected = true;
                 EnsureIndexes();
-                _logger.LogInformation("Connected to MongoDB 8.0 database '{DatabaseName}' and verified multi-user/multi-child composite indexes.", databaseName);
+                _logger.LogInformation("Connected to MongoDB database '{DatabaseName}' and verified multi-user/multi-child composite indexes.", databaseName);
             }
             catch (Exception ex)
             {
                 IsMongoConnected = false;
-                _logger.LogWarning("MongoDB connection unavailable ({Message}). Running with high-speed In-Memory store seeded with clinical data.", ex.Message);
+                _logger.LogWarning("MongoDB connection unavailable ({Message}). Running with persistent file-backed store.", ex.Message);
             }
         }
     }

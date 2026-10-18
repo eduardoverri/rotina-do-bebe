@@ -213,22 +213,108 @@ export class RoutineStore {
 
   async loadFamilyAndBabies(): Promise<void> {
     const userId = this.babyStore.currentUserId();
-    if (!userId) return;
+    const userEmail = this.babyStore.currentUserEmail();
+    if (!userId && !userEmail) return;
 
     try {
       const res = await firstValueFrom(
-        this.http.get<{ family: { name: string; inviteCode: string }; babies: BabyModel[] }>(`${this.apiBaseUrl}/families/current`)
+        this.http.get<{
+          user?: { id: string; email: string };
+          family: { name: string; inviteCode: string };
+          babies: BabyModel[];
+        }>(`${this.apiBaseUrl}/families/current`)
       );
+
+      const effectiveUserId = res?.user?.id || userId;
+      const effectiveEmail = res?.user?.email || userEmail;
+
       if (res?.babies) {
-        this.babyStore.setAuthenticatedUserBabies(userId, res.family.name, res.family.inviteCode, res.babies);
+        this.babyStore.setAuthenticatedUserBabies(
+          effectiveUserId,
+          res.family.name,
+          res.family.inviteCode,
+          res.babies,
+          effectiveEmail
+        );
       }
+
+      await this.syncLocalBackupToServer();
+      await this.flushOfflineQueue();
       this.isBackendConnected.set(true);
     } catch {
       this.isBackendConnected.set(false);
-      this.popupAlert.error(
-        'Não foi possível consultar os dados da família e dos filhos.',
-        'Erro de Conexão'
+      const cachedBabies = this.babyStore.getLocalBackupBabies(userId, userEmail);
+      if (cachedBabies.length > 0) {
+        this.babyStore.setAuthenticatedUserBabies(
+          userId,
+          this.babyStore.familyName() || 'Família',
+          this.babyStore.inviteCode() || '',
+          cachedBabies,
+          userEmail
+        );
+      } else {
+        this.popupAlert.error(
+          'Não foi possível consultar os dados da família e dos filhos.',
+          'Erro de Conexão'
+        );
+      }
+    }
+  }
+
+  async syncLocalBackupToServer(): Promise<void> {
+    const babies = this.babyStore.babies();
+    if (babies.length === 0) return;
+
+    const allRoutineEvents: RoutineEventModel[] = [];
+    const allAllergenTrials: AllergenTrialItem['trial'][] = [];
+    const allMilestones: MilestoneItem[] = [];
+
+    for (const b of babies) {
+      if (!b.id) continue;
+      allRoutineEvents.push(...this.getLocalEvents(b.id));
+      allAllergenTrials.push(...this.getLocalAllergenTrials(b.id).map(x => x.trial));
+      allMilestones.push(...this.getLocalMilestones(b.id));
+    }
+
+    try {
+      const synced = await firstValueFrom(
+        this.http.post<{
+          user?: { id: string; email: string };
+          family: { name: string; inviteCode: string };
+          babies: BabyModel[];
+        }>(`${this.apiBaseUrl}/sync/restore`, {
+          babies,
+          routineEvents: allRoutineEvents,
+          allergenTrials: allAllergenTrials,
+          milestones: allMilestones
+        })
       );
+
+      if (synced?.babies) {
+        this.babyStore.setAuthenticatedUserBabies(
+          synced.user?.id || this.babyStore.currentUserId(),
+          synced.family.name,
+          synced.family.inviteCode,
+          synced.babies,
+          synced.user?.email || this.babyStore.currentUserEmail()
+        );
+      }
+    } catch {
+      // Ignora silenciosamente caso offline; dados permanecem seguros no armazenamento local
+    }
+  }
+
+  private async flushOfflineQueue(): Promise<void> {
+    const pending = await this.offlineSync.getAllQueuedEvents();
+    if (pending.length === 0) return;
+
+    for (const item of pending) {
+      try {
+        await firstValueFrom(this.http.post(`${this.apiBaseUrl}${item.endpoint}`, item.payload));
+        await this.offlineSync.clearQueuedEvent(item.localId);
+      } catch {
+        break;
+      }
     }
   }
 
@@ -292,10 +378,24 @@ export class RoutineStore {
     }
   }
 
-  async refreshAllForBaby(babyId: string, notifyInfo = false): Promise<void> {
+  async refreshAllForBaby(babyId: string, notifyInfo = false, isRetryAfterRestore = false): Promise<void> {
     if (!babyId) {
       this.clearBabyState();
       return;
+    }
+
+    // Carrega imediatamente o backup local para evitar tela vazia
+    const cachedEvents = this.getLocalEvents(babyId);
+    const cachedTrials = this.getLocalAllergenTrials(babyId);
+    const cachedMilestones = this.getLocalMilestones(babyId);
+    if (cachedEvents.length > 0 && this.events().length === 0) {
+      this.events.set(cachedEvents);
+    }
+    if (cachedTrials.length > 0 && this.allergenTrials().length === 0) {
+      this.allergenTrials.set(cachedTrials);
+    }
+    if (cachedMilestones.length > 0 && this.milestones().length === 0) {
+      this.milestones.set(cachedMilestones);
     }
 
     try {
@@ -319,7 +419,10 @@ export class RoutineStore {
         firstValueFrom(this.http.get<{ milestones: MilestoneItem[] }>(`${this.apiBaseUrl}/babies/${babyId}/milestones`))
       ]);
 
-      this.events.set(timeline.events);
+      const mergedEvents = this.mergeEvents(timeline.events ?? [], cachedEvents);
+      this.events.set(mergedEvents);
+      this.saveLocalEvents(babyId, mergedEvents);
+
       this.totalSleepMinutes.set(timeline.totalSleepMinutes);
       this.napCount.set(timeline.napCount);
       this.expectedNaps.set(timeline.expectedNaps);
@@ -339,8 +442,15 @@ export class RoutineStore {
       );
 
       this.napTransition.set(transition);
-      this.allergenTrials.set(trials);
-      this.milestones.set(milestonesRes.milestones);
+
+      const mergedTrials = this.mergeAllergenTrials(trials ?? [], cachedTrials);
+      this.allergenTrials.set(mergedTrials);
+      this.saveLocalAllergenTrials(babyId, mergedTrials);
+
+      const mergedMilestones = this.mergeMilestones(milestonesRes.milestones ?? [], cachedMilestones);
+      this.milestones.set(mergedMilestones);
+      this.saveLocalMilestones(babyId, mergedMilestones);
+
       this.isBackendConnected.set(true);
 
       if (notifyInfo) {
@@ -356,12 +466,18 @@ export class RoutineStore {
           'Aviso Clínico • Hidratação'
         );
       }
-    } catch {
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 404 && !isRetryAfterRestore && this.babyStore.babies().length > 0) {
+        await this.syncLocalBackupToServer();
+        await this.refreshAllForBaby(babyId, notifyInfo, true);
+        return;
+      }
+
       this.isBackendConnected.set(false);
-      this.popupAlert.error(
-        'Não foi possível carregar os registros do filho(a).',
-        'Erro de Leitura'
-      );
+      this.events.set(cachedEvents);
+      this.allergenTrials.set(cachedTrials);
+      this.milestones.set(cachedMilestones);
     }
   }
 
@@ -704,7 +820,14 @@ export class RoutineStore {
   }
 
   private handleEventCreated(ev: RoutineEventModel, successMsg: string, title = 'Registro Salvo'): void {
-    this.events.update(list => [ev, ...list]);
+    const babyId = ev.babyId || this.babyStore.selectedBabyId();
+    this.events.update(list => {
+      const updated = this.mergeEvents([ev], list);
+      if (babyId) {
+        this.saveLocalEvents(babyId, updated);
+      }
+      return updated;
+    });
     this.popupAlert.success(successMsg, title);
     if (ev.clinicalFlags?.isRedFlagAlert && ev.clinicalFlags.alertMessage) {
       if (ev.clinicalFlags.urgencyLevel === 'Emergency' || ev.clinicalFlags.urgencyLevel === 'Urgent') {
@@ -719,5 +842,94 @@ export class RoutineStore {
         );
       }
     }
+  }
+
+  private getLocalEvents(babyId: string): RoutineEventModel[] {
+    if (!babyId) return [];
+    try {
+      const raw = localStorage.getItem(`babyroutine_events_${babyId}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveLocalEvents(babyId: string, events: RoutineEventModel[]): void {
+    if (!babyId) return;
+    try {
+      localStorage.setItem(`babyroutine_events_${babyId}`, JSON.stringify(events.slice(0, 250)));
+    } catch {}
+  }
+
+  private getLocalAllergenTrials(babyId: string): AllergenTrialItem[] {
+    if (!babyId) return [];
+    try {
+      const raw = localStorage.getItem(`babyroutine_allergens_${babyId}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveLocalAllergenTrials(babyId: string, items: AllergenTrialItem[]): void {
+    if (!babyId) return;
+    try {
+      localStorage.setItem(`babyroutine_allergens_${babyId}`, JSON.stringify(items));
+    } catch {}
+  }
+
+  private getLocalMilestones(babyId: string): MilestoneItem[] {
+    if (!babyId) return [];
+    try {
+      const raw = localStorage.getItem(`babyroutine_milestones_${babyId}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveLocalMilestones(babyId: string, items: MilestoneItem[]): void {
+    if (!babyId) return;
+    try {
+      localStorage.setItem(`babyroutine_milestones_${babyId}`, JSON.stringify(items));
+    } catch {}
+  }
+
+  private mergeEvents(serverEvents: RoutineEventModel[], localEvents: RoutineEventModel[]): RoutineEventModel[] {
+    const map = new Map<string, RoutineEventModel>();
+    for (const ev of [...localEvents, ...serverEvents]) {
+      if (!ev || !ev.id) continue;
+      map.set(ev.id, ev);
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }
+
+  private mergeAllergenTrials(serverTrials: AllergenTrialItem[], localTrials: AllergenTrialItem[]): AllergenTrialItem[] {
+    const map = new Map<string, AllergenTrialItem>();
+    for (const item of [...localTrials, ...serverTrials]) {
+      if (!item?.trial?.id) continue;
+      map.set(item.trial.id, item);
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.trial.introducedAt).getTime() - new Date(a.trial.introducedAt).getTime()
+    );
+  }
+
+  private mergeMilestones(serverMilestones: MilestoneItem[], localMilestones: MilestoneItem[]): MilestoneItem[] {
+    const map = new Map<string, MilestoneItem>();
+    for (const m of [...serverMilestones, ...localMilestones]) {
+      if (!m?.milestoneCode) continue;
+      const existing = map.get(m.milestoneCode);
+      if (!existing) {
+        map.set(m.milestoneCode, m);
+      } else {
+        // Prioriza o status mais avançado caso o servidor tenha acabado de reiniciar com NotStarted
+        const rank = (s: string) => (s === 'Achieved' ? 2 : s === 'InProgress' ? 1 : 0);
+        map.set(m.milestoneCode, rank(m.status) >= rank(existing.status) ? m : existing);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.expectedAgeMonths - b.expectedAgeMonths);
   }
 }

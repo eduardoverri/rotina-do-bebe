@@ -249,4 +249,40 @@ public static class ClaimsPrincipalExtensions
         var claimName = httpContext.User.FindFirstValue(ClaimTypes.Name);
         return !string.IsNullOrWhiteSpace(claimName) ? claimName : "Responsável";
     }
+
+    public static async Task<UserAccount?> GetOrRestoreCurrentUserAsync(
+        this HttpContext httpContext,
+        BabyRoutine.Application.Common.Interfaces.IUserRepository userRepo,
+        CancellationToken ct = default)
+    {
+        var userId = httpContext.GetCurrentUserId();
+        var email = httpContext.User.FindFirstValue(ClaimTypes.Email)
+                    ?? httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Email)
+                    ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(userId) && string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        var existing = await userRepo.GetByIdAsync(userId, ct);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var googleSub = httpContext.User.FindFirstValue("google_sub") ?? string.Empty;
+        var name = httpContext.GetCurrentUserName();
+        var picture = httpContext.User.FindFirstValue("picture") ?? string.Empty;
+        var familyId = httpContext.User.FindFirstValue("family_id");
+
+        return await userRepo.RestoreOrUpsertUserAsync(
+            userId,
+            googleSub,
+            email,
+            name,
+            picture,
+            familyId,
+            ct);
+    }
 }

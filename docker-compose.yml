@@ -19,9 +19,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__MongoDb=mongodb://mongodb:27017
       - MongoDb__DatabaseName=baby_routine_db
+      - BABYROUTINE_DATA_FILE=/app/data/babyroutine-store.json
+    volumes:
+      - app_data:/app/data
     depends_on:
       - mongodb
     restart: unless-stopped
 
 volumes:
   mongo_data:
+  app_data:

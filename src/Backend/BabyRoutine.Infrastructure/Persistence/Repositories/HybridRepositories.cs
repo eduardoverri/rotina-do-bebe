@@ -1,5 +1,9 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using BabyRoutine.Application.Common.Interfaces;
 using BabyRoutine.Application.Common.Models;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -7,6 +11,13 @@ namespace BabyRoutine.Infrastructure.Persistence.Repositories;
 
 public class InMemoryDataStore
 {
+    private readonly string _filePath;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
+
     public List<UserAccount> Users { get; } = [];
     public List<Family> Families { get; } = [];
     public List<Baby> Babies { get; } = [];
@@ -14,6 +25,119 @@ public class InMemoryDataStore
     public List<AllergenTrial> AllergenTrials { get; } = [];
     public List<MilestoneProgress> Milestones { get; } = [];
     public object SyncRoot { get; } = new();
+    public string DataFilePath => _filePath;
+
+    public InMemoryDataStore(IConfiguration? configuration = null)
+        : this(ResolveDefaultFilePath(configuration))
+    {
+    }
+
+    public InMemoryDataStore(string filePath)
+    {
+        _filePath = filePath;
+        LoadFromDisk();
+    }
+
+    private static string ResolveDefaultFilePath(IConfiguration? configuration)
+    {
+        var envPath = Environment.GetEnvironmentVariable("BABYROUTINE_DATA_FILE")
+                      ?? configuration?["Persistence:DataFilePath"];
+        if (!string.IsNullOrWhiteSpace(envPath))
+        {
+            return envPath.Trim();
+        }
+
+        if (Directory.Exists("/app"))
+        {
+            return "/app/data/babyroutine-store.json";
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "data", "babyroutine-store.json");
+    }
+
+    private void LoadFromDisk()
+    {
+        if (string.IsNullOrWhiteSpace(_filePath) || !File.Exists(_filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (SyncRoot)
+            {
+                var json = File.ReadAllText(_filePath);
+                var snapshot = JsonSerializer.Deserialize<PersistedStoreSnapshot>(json, JsonOptions);
+                if (snapshot is null) return;
+
+                if (snapshot.Users is { Count: > 0 }) Users.AddRange(snapshot.Users);
+                if (snapshot.Families is { Count: > 0 }) Families.AddRange(snapshot.Families);
+                if (snapshot.Babies is { Count: > 0 }) Babies.AddRange(snapshot.Babies);
+                if (snapshot.RoutineEvents is { Count: > 0 }) RoutineEvents.AddRange(snapshot.RoutineEvents);
+                if (snapshot.AllergenTrials is { Count: > 0 }) AllergenTrials.AddRange(snapshot.AllergenTrials);
+                if (snapshot.Milestones is { Count: > 0 }) Milestones.AddRange(snapshot.Milestones);
+            }
+        }
+        catch
+        {
+            // Ignore corrupted/inaccessible snapshot and start cleanly
+        }
+    }
+
+    public void SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(_filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (SyncRoot)
+            {
+                var dir = Path.GetDirectoryName(_filePath);
+                if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var snapshot = new PersistedStoreSnapshot
+                {
+                    Users = Users.ToList(),
+                    Families = Families.ToList(),
+                    Babies = Babies.ToList(),
+                    RoutineEvents = RoutineEvents.ToList(),
+                    AllergenTrials = AllergenTrials.ToList(),
+                    Milestones = Milestones.ToList()
+                };
+
+                var json = JsonSerializer.Serialize(snapshot, JsonOptions);
+                var tempPath = $"{_filePath}.tmp";
+                File.WriteAllText(tempPath, json, Encoding.UTF8);
+                File.Move(tempPath, _filePath, overwrite: true);
+            }
+        }
+        catch
+        {
+            // Non-fatal if container filesystem is read-only
+        }
+    }
+
+    public static string CreateDeterministicObjectId(string key)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(key.Trim().ToLowerInvariant()));
+        return Convert.ToHexString(bytes)[..24].ToLowerInvariant();
+    }
+
+    private sealed class PersistedStoreSnapshot
+    {
+        public List<UserAccount> Users { get; set; } = [];
+        public List<Family> Families { get; set; } = [];
+        public List<Baby> Babies { get; set; } = [];
+        public List<RoutineEvent> RoutineEvents { get; set; } = [];
+        public List<AllergenTrial> AllergenTrials { get; set; } = [];
+        public List<MilestoneProgress> Milestones { get; set; } = [];
+    }
 }
 
 public class UserRepository(MongoDbContext db, InMemoryDataStore mem) : IUserRepository
@@ -35,57 +159,111 @@ public class UserRepository(MongoDbContext db, InMemoryDataStore mem) : IUserRep
 
     public async Task<UserAccount?> GetByGoogleSubOrEmailAsync(string googleSub, string email, CancellationToken ct = default)
     {
-        var normEmail = email.Trim().ToLowerInvariant();
+        var normEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
         if (db.IsMongoConnected && db.Users != null)
         {
-            var user = await db.Users.Find(u => u.GoogleSub == googleSub || u.Email.ToLower() == normEmail).FirstOrDefaultAsync(ct);
+            var user = await db.Users.Find(u =>
+                (!string.IsNullOrWhiteSpace(googleSub) && u.GoogleSub == googleSub) ||
+                (!string.IsNullOrWhiteSpace(normEmail) && u.Email.ToLower() == normEmail)).FirstOrDefaultAsync(ct);
             if (user != null) return user;
         }
         lock (mem.SyncRoot)
         {
             return mem.Users.FirstOrDefault(u =>
                 (!string.IsNullOrWhiteSpace(googleSub) && u.GoogleSub == googleSub) ||
-                u.Email.Equals(normEmail, StringComparison.OrdinalIgnoreCase));
+                (!string.IsNullOrWhiteSpace(normEmail) && u.Email.Equals(normEmail, StringComparison.OrdinalIgnoreCase)));
         }
     }
 
     public async Task<UserAccount> UpsertGoogleUserAsync(string googleSub, string email, string name, string pictureUrl, CancellationToken ct = default)
     {
-        var existing = await GetByGoogleSubOrEmailAsync(googleSub, email, ct);
+        var normEmail = email.Trim().ToLowerInvariant();
+        var identitySeed = !string.IsNullOrWhiteSpace(normEmail) ? normEmail : googleSub;
+        var deterministicUserId = InMemoryDataStore.CreateDeterministicObjectId($"user:{identitySeed}");
+        var deterministicFamilyId = InMemoryDataStore.CreateDeterministicObjectId($"family:{identitySeed}");
+
+        return await RestoreOrUpsertUserAsync(
+            deterministicUserId,
+            googleSub,
+            normEmail,
+            name,
+            pictureUrl,
+            deterministicFamilyId,
+            ct);
+    }
+
+    public async Task<UserAccount> RestoreOrUpsertUserAsync(
+        string userId,
+        string googleSub,
+        string email,
+        string name,
+        string pictureUrl,
+        string? familyId = null,
+        CancellationToken ct = default)
+    {
+        var normEmail = (email ?? string.Empty).Trim().ToLowerInvariant();
+        var existing = await GetByIdAsync(userId, ct)
+                       ?? await GetByGoogleSubOrEmailAsync(googleSub, normEmail, ct);
+
         if (existing != null)
         {
             existing.LastLoginAt = DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(name)) existing.Name = name;
             if (!string.IsNullOrWhiteSpace(pictureUrl)) existing.PictureUrl = pictureUrl;
             if (!string.IsNullOrWhiteSpace(googleSub)) existing.GoogleSub = googleSub;
+            if (!string.IsNullOrWhiteSpace(normEmail)) existing.Email = normEmail;
 
             if (db.IsMongoConnected && db.Users != null)
             {
                 await db.Users.ReplaceOneAsync(u => u.Id == existing.Id, existing, new ReplaceOptions { IsUpsert = true }, ct);
             }
+            lock (mem.SyncRoot)
+            {
+                var idx = mem.Users.FindIndex(u => u.Id == existing.Id);
+                if (idx >= 0) mem.Users[idx] = existing;
+                else mem.Users.Add(existing);
+                mem.SaveChanges();
+            }
             return existing;
         }
 
+        var identitySeed = !string.IsNullOrWhiteSpace(normEmail)
+            ? normEmail
+            : !string.IsNullOrWhiteSpace(googleSub) ? googleSub : userId;
+
+        var resolvedUserId = !string.IsNullOrWhiteSpace(userId) && ObjectId.TryParse(userId, out _)
+            ? userId
+            : InMemoryDataStore.CreateDeterministicObjectId($"user:{identitySeed}");
+
+        var resolvedFamilyId = !string.IsNullOrWhiteSpace(familyId) && ObjectId.TryParse(familyId, out _)
+            ? familyId
+            : InMemoryDataStore.CreateDeterministicObjectId($"family:{identitySeed}");
+
         var newUser = new UserAccount
         {
-            Id = ObjectId.GenerateNewId().ToString(),
-            GoogleSub = string.IsNullOrWhiteSpace(googleSub) ? $"google-{Guid.NewGuid():N}" : googleSub,
-            Email = email.Trim().ToLowerInvariant(),
-            Name = string.IsNullOrWhiteSpace(name) ? email.Split('@')[0] : name,
+            Id = resolvedUserId,
+            GoogleSub = string.IsNullOrWhiteSpace(googleSub) ? $"google-{resolvedUserId}" : googleSub,
+            Email = string.IsNullOrWhiteSpace(normEmail) ? $"{resolvedUserId}@user.local" : normEmail,
+            Name = string.IsNullOrWhiteSpace(name)
+                ? (!string.IsNullOrWhiteSpace(normEmail) ? normEmail.Split('@')[0] : "Responsável")
+                : name,
             PictureUrl = pictureUrl ?? string.Empty,
             Relation = "Responsável",
-            FamilyId = ObjectId.GenerateNewId().ToString(),
+            FamilyId = resolvedFamilyId,
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow
         };
 
         if (db.IsMongoConnected && db.Users != null)
         {
-            await db.Users.InsertOneAsync(newUser, cancellationToken: ct);
+            await db.Users.ReplaceOneAsync(u => u.Id == newUser.Id, newUser, new ReplaceOptions { IsUpsert = true }, ct);
         }
         lock (mem.SyncRoot)
         {
-            mem.Users.Add(newUser);
+            var idx = mem.Users.FindIndex(u => u.Id == newUser.Id);
+            if (idx >= 0) mem.Users[idx] = newUser;
+            else mem.Users.Add(newUser);
+            mem.SaveChanges();
         }
 
         return newUser;
@@ -114,12 +292,17 @@ public class FamilyRepository(MongoDbContext db, InMemoryDataStore mem) : IFamil
             if (fam != null) return fam;
 
             var lastName = user.Name.Split(' ').LastOrDefault() ?? user.Name;
+            var familyId = !string.IsNullOrWhiteSpace(user.FamilyId) && ObjectId.TryParse(user.FamilyId, out _)
+                ? user.FamilyId
+                : InMemoryDataStore.CreateDeterministicObjectId($"family:{user.Id}");
+            var inviteHash = InMemoryDataStore.CreateDeterministicObjectId($"invite:{user.Id}")[..8].ToUpperInvariant();
+
             newFam = new Family
             {
-                Id = user.FamilyId,
+                Id = familyId,
                 OwnerUserId = user.Id,
                 Name = $"Família {lastName}",
-                InviteCode = $"{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+                InviteCode = inviteHash,
                 SubscriptionTier = "FamilyPro",
                 Members =
                 [
@@ -134,11 +317,12 @@ public class FamilyRepository(MongoDbContext db, InMemoryDataStore mem) : IFamil
                 ]
             };
             mem.Families.Add(newFam);
+            mem.SaveChanges();
         }
 
         if (db.IsMongoConnected && db.Families != null)
         {
-            await db.Families.InsertOneAsync(newFam, cancellationToken: ct);
+            await db.Families.ReplaceOneAsync(f => f.Id == newFam.Id, newFam, new ReplaceOptions { IsUpsert = true }, ct);
         }
 
         return newFam;
@@ -205,11 +389,14 @@ public class BabyRepository(MongoDbContext db, InMemoryDataStore mem) : IBabyRep
     {
         if (db.IsMongoConnected && db.Babies != null)
         {
-            await db.Babies.InsertOneAsync(baby, cancellationToken: ct);
+            await db.Babies.ReplaceOneAsync(b => b.Id == baby.Id, baby, new ReplaceOptions { IsUpsert = true }, ct);
         }
         lock (mem.SyncRoot)
         {
-            mem.Babies.Add(baby);
+            var idx = mem.Babies.FindIndex(b => b.Id == baby.Id);
+            if (idx >= 0) mem.Babies[idx] = baby;
+            else mem.Babies.Add(baby);
+            mem.SaveChanges();
         }
         return baby;
     }
@@ -222,8 +409,10 @@ public class BabyRepository(MongoDbContext db, InMemoryDataStore mem) : IBabyRep
         }
         lock (mem.SyncRoot)
         {
-            var idx = mem.Babies.FindIndex(b => b.Id == baby.Id && b.OwnerUserId == baby.OwnerUserId);
+            var idx = mem.Babies.FindIndex(b => b.Id == baby.Id);
             if (idx >= 0) mem.Babies[idx] = baby;
+            else mem.Babies.Add(baby);
+            mem.SaveChanges();
         }
     }
 
@@ -245,6 +434,7 @@ public class BabyRepository(MongoDbContext db, InMemoryDataStore mem) : IBabyRep
             mem.RoutineEvents.RemoveAll(e => e.BabyId == babyId && e.OwnerUserId == ownerUserId);
             mem.AllergenTrials.RemoveAll(a => a.BabyId == babyId && a.OwnerUserId == ownerUserId);
             mem.Milestones.RemoveAll(m => m.BabyId == babyId && m.OwnerUserId == ownerUserId);
+            mem.SaveChanges();
         }
     }
 }
@@ -253,15 +443,32 @@ public class RoutineEventRepository(MongoDbContext db, InMemoryDataStore mem) : 
 {
     public async Task<RoutineEvent> InsertAsync(RoutineEvent routineEvent, CancellationToken ct = default)
     {
+        await UpsertAsync(routineEvent, ct);
+        return routineEvent;
+    }
+
+    public async Task UpsertAsync(RoutineEvent routineEvent, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(routineEvent.Id) || !ObjectId.TryParse(routineEvent.Id, out _))
+        {
+            routineEvent.Id = ObjectId.GenerateNewId().ToString();
+        }
+
         if (db.IsMongoConnected && db.RoutineEvents != null)
         {
-            await db.RoutineEvents.InsertOneAsync(routineEvent, cancellationToken: ct);
+            await db.RoutineEvents.ReplaceOneAsync(
+                e => e.Id == routineEvent.Id,
+                routineEvent,
+                new ReplaceOptions { IsUpsert = true },
+                ct);
         }
         lock (mem.SyncRoot)
         {
-            mem.RoutineEvents.Add(routineEvent);
+            var idx = mem.RoutineEvents.FindIndex(e => e.Id == routineEvent.Id);
+            if (idx >= 0) mem.RoutineEvents[idx] = routineEvent;
+            else mem.RoutineEvents.Add(routineEvent);
+            mem.SaveChanges();
         }
-        return routineEvent;
     }
 
     public async Task<List<RoutineEvent>> GetByBabyAndDateRangeAsync(string ownerUserId, string babyId, DateTime startUtc, DateTime endUtc, CancellationToken ct = default)
@@ -354,27 +561,27 @@ public class AllergenTrialRepository(MongoDbContext db, InMemoryDataStore mem) :
 
     public async Task<AllergenTrial> InsertAsync(AllergenTrial trial, CancellationToken ct = default)
     {
-        if (db.IsMongoConnected && db.AllergenTrials != null)
-        {
-            await db.AllergenTrials.InsertOneAsync(trial, cancellationToken: ct);
-        }
-        lock (mem.SyncRoot)
-        {
-            mem.AllergenTrials.Insert(0, trial);
-        }
+        await UpdateAsync(trial, ct);
         return trial;
     }
 
     public async Task UpdateAsync(AllergenTrial trial, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(trial.Id) || !ObjectId.TryParse(trial.Id, out _))
+        {
+            trial.Id = ObjectId.GenerateNewId().ToString();
+        }
+
         if (db.IsMongoConnected && db.AllergenTrials != null)
         {
-            await db.AllergenTrials.ReplaceOneAsync(a => a.Id == trial.Id && a.OwnerUserId == trial.OwnerUserId, trial, new ReplaceOptions { IsUpsert = true }, ct);
+            await db.AllergenTrials.ReplaceOneAsync(a => a.Id == trial.Id, trial, new ReplaceOptions { IsUpsert = true }, ct);
         }
         lock (mem.SyncRoot)
         {
-            var idx = mem.AllergenTrials.FindIndex(a => a.Id == trial.Id && a.OwnerUserId == trial.OwnerUserId);
+            var idx = mem.AllergenTrials.FindIndex(a => a.Id == trial.Id);
             if (idx >= 0) mem.AllergenTrials[idx] = trial;
+            else mem.AllergenTrials.Insert(0, trial);
+            mem.SaveChanges();
         }
     }
 }
@@ -402,6 +609,7 @@ public class MilestoneRepository(MongoDbContext db, InMemoryDataStore mem) : IMi
             {
                 var seeded = SeedData.CreateInitialMilestones(babyId, ownerUserId);
                 mem.Milestones.AddRange(seeded);
+                mem.SaveChanges();
                 return seeded;
             }
             return babyMilestones;
@@ -416,14 +624,27 @@ public class MilestoneRepository(MongoDbContext db, InMemoryDataStore mem) : IMi
 
     public async Task UpdateAsync(MilestoneProgress milestone, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(milestone.Id) || !ObjectId.TryParse(milestone.Id, out _))
+        {
+            milestone.Id = ObjectId.GenerateNewId().ToString();
+        }
+
         if (db.IsMongoConnected && db.Milestones != null)
         {
-            await db.Milestones.ReplaceOneAsync(m => m.Id == milestone.Id && m.OwnerUserId == milestone.OwnerUserId, milestone, new ReplaceOptions { IsUpsert = true }, ct);
+            await db.Milestones.ReplaceOneAsync(
+                m => m.BabyId == milestone.BabyId && m.OwnerUserId == milestone.OwnerUserId && m.MilestoneCode == milestone.MilestoneCode,
+                milestone,
+                new ReplaceOptions { IsUpsert = true },
+                ct);
         }
         lock (mem.SyncRoot)
         {
-            var idx = mem.Milestones.FindIndex(m => m.Id == milestone.Id && m.OwnerUserId == milestone.OwnerUserId);
+            var idx = mem.Milestones.FindIndex(m =>
+                (m.Id == milestone.Id) ||
+                (m.BabyId == milestone.BabyId && m.OwnerUserId == milestone.OwnerUserId && m.MilestoneCode.Equals(milestone.MilestoneCode, StringComparison.OrdinalIgnoreCase)));
             if (idx >= 0) mem.Milestones[idx] = milestone;
+            else mem.Milestones.Add(milestone);
+            mem.SaveChanges();
         }
     }
 }

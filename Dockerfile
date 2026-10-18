@@ -34,9 +34,12 @@ COPY --from=build-env-api /app/api/out .
 # Copia os artefatos compilados do frontend para a pasta wwwroot do backend
 COPY --from=build-env-ui /app/ui/dist/baby-routine-frontend/browser ./wwwroot
 
-# Expõe a porta que o .NET utilizará
+# Expõe a porta que o .NET utilizará e diretório de persistência local
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV DOTNET_hostBuilder__reloadConfigOnChange=false
+ENV BABYROUTINE_DATA_FILE=/app/data/babyroutine-store.json
 
 ENTRYPOINT ["dotnet", "BabyRoutine.Api.dll"]

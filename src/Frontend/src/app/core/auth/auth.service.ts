@@ -107,16 +107,35 @@ export class AuthService {
       this.currentUser.set(res.user);
       localStorage.setItem('google_user_profile', JSON.stringify(res.user));
       localStorage.setItem('google_user_id', res.user.id);
+      localStorage.setItem('google_user_email', (res.user.email ?? '').trim().toLowerCase());
       localStorage.setItem('caregiver-name', res.user.name);
       this.babyStore.setAuthenticatedUserBabies(
         res.user.id,
         res.family.name,
         res.family.inviteCode,
-        res.babies
+        res.babies,
+        res.user.email
       );
       return true;
-    } catch {
-      this.signOut(false);
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 401 || status === 403) {
+        this.signOut(false);
+        return false;
+      }
+      // Se houve apenas oscilação de rede durante um deploy, mantém a sessão local ativa
+      const storedUser = this.currentUser();
+      if (storedUser) {
+        const cachedBabies = this.babyStore.getLocalBackupBabies(storedUser.id, storedUser.email);
+        this.babyStore.setAuthenticatedUserBabies(
+          storedUser.id,
+          this.babyStore.familyName() || 'Família',
+          this.babyStore.inviteCode() || '',
+          cachedBabies,
+          storedUser.email
+        );
+        return true;
+      }
       return false;
     }
   }
@@ -188,6 +207,7 @@ export class AuthService {
     localStorage.removeItem('google_jwt_token');
     localStorage.removeItem('google_user_profile');
     localStorage.removeItem('google_user_id');
+    localStorage.removeItem('google_user_email');
     localStorage.removeItem('caregiver-name');
     this.token.set(null);
     this.currentUser.set(null);
@@ -226,11 +246,12 @@ export class AuthService {
     localStorage.setItem('google_jwt_token', jwtToken);
     localStorage.setItem('google_user_profile', JSON.stringify(user));
     localStorage.setItem('google_user_id', user.id);
+    localStorage.setItem('google_user_email', (user.email ?? '').trim().toLowerCase());
     localStorage.setItem('caregiver-name', user.name);
 
     this.token.set(jwtToken);
     this.currentUser.set(user);
-    this.babyStore.setAuthenticatedUserBabies(user.id, familyName, inviteCode, babies);
+    this.babyStore.setAuthenticatedUserBabies(user.id, familyName, inviteCode, babies, user.email);
   }
 
   private loadStoredUser(): GoogleUserAccount | null {
