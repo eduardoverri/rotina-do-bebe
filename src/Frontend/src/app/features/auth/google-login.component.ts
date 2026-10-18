@@ -11,7 +11,11 @@ import { RoutineStore } from '../../core/state/routine.store';
     <div style="max-width: 500px; margin: 3rem auto;">
       <section class="card" style="border-top: 5px solid var(--cat-sleep); padding: 2rem;">
         <div style="text-align: center; margin-bottom: 1.75rem;">
-          <h1 style="font-size: 1.55rem; font-weight: 800;">Rotina do Bebê (0 a 24 Meses)</h1>
+          <img
+            src="app-icon.png"
+            alt="Rotina do Bebê"
+            style="width: 72px; height: 72px; object-fit: contain; margin-bottom: 0.5rem;" />
+          <h1 style="font-size: 1.55rem; font-weight: 800;">Rotina do Bebê</h1>
           <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.4rem;">
             Autentique-se via <strong>Google SSO</strong>. Seus filhos e registros clínicos são protegidos por JWT e isolados na sua conta Google.
           </p>

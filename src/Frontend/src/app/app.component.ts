@@ -44,7 +44,7 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
       <header class="pwa-header no-print">
         <div class="pwa-topbar">
           <div class="pwa-brand">
-            <span class="pwa-brand-logo" aria-hidden="true">🍼</span>
+            <img src="app-icon.png" alt="Rotina do Bebê" class="pwa-brand-logo" />
             <div style="min-width: 0;">
               <div class="pwa-brand-title">Rotina do Bebê</div>
               @if (authService.isAuthenticated() && babyStore.hasBabies()) {
