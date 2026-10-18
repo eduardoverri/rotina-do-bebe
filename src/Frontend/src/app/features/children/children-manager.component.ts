@@ -54,7 +54,7 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
                     Idade: <strong>{{ b | babyAge }}</strong> • Nasc.: {{ b.birthDate | date:'dd/MM/yyyy' }} ({{ b.gestationalWeeks }}s {{ b.gestationalDays }}d)
                   </div>
                   <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">
-                    Peso atual: {{ b.currentWeightGrams }}g • Estatura: {{ b.currentHeightCm }}cm • Sangue: {{ b.bloodType }}
+                    Peso atual: {{ b.currentWeightGrams }}g • Estatura: {{ b.currentHeightCm }}cm • Perímetro Cefálico: {{ b.headCircumferenceCm }}cm • Sangue: {{ b.bloodType }}
                   </div>
                 </div>
 
@@ -124,6 +124,11 @@ import { BabyAgePipe } from '../../shared/pipes/baby-age.pipe';
           </div>
 
           <div>
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Perímetro Cefálico (cm)</label>
+            <input type="number" step="0.1" class="input-field" [(ngModel)]="headCircumferenceCm" min="20" max="60" />
+          </div>
+
+          <div>
             <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Sexo Biológico (Curva OMS)</label>
             <select class="input-field" [(ngModel)]="gender">
               <option value="F">Feminino</option>
@@ -171,6 +176,7 @@ export class ChildrenManagerComponent {
   gender = 'F';
   currentWeightGrams = 3200;
   currentHeightCm = 49;
+  headCircumferenceCm = 35;
   bloodType = 'O+';
 
   async selectChild(babyId: string): Promise<void> {
@@ -191,7 +197,7 @@ export class ChildrenManagerComponent {
       birthLengthCm: this.currentHeightCm,
       currentWeightGrams: this.currentWeightGrams,
       currentHeightCm: this.currentHeightCm,
-      headCircumferenceCm: 35,
+      headCircumferenceCm: this.headCircumferenceCm,
       bloodType: this.bloodType
     });
     if (created) {
