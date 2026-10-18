@@ -2,11 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RoutineStore } from '../../../../core/state/routine.store';
 import { PopupAlertService } from '../../../../core/services/popup-alert.service';
+import { OfficialReferenceComponent } from '../../../../shared/components/official-reference/official-reference.component';
 
 @Component({
   selector: 'app-nap-stopwatch',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, OfficialReferenceComponent],
   template: `
     <div class="card" style="border-top: 4px solid var(--cat-sleep);">
       <h3 class="section-title">
@@ -73,6 +74,20 @@ import { PopupAlertService } from '../../../../core/services/popup-alert.service
         <span aria-hidden="true">💾</span>
         <span>Concluir e Salvar Sessão de Sono</span>
       </button>
+
+      <div class="card-elevated" style="margin-top: 1rem; font-size: 0.85rem;">
+        <div style="font-weight: 700; margin-bottom: 0.35rem;">🌙 O sono do bebê — orientações oficiais</div>
+        <ul style="padding-left: 1.2rem; color: var(--text-secondary);">
+          <li>O recém-nascido dorme muito: ofereça um lugar tranquilo, arejado e limpo para dormir.</li>
+          <li>Deixe o bebê de <strong>barriga para cima</strong> e observe se a boca e o nariz estão descobertos.</li>
+          <li>Não use travesseiro nem cobertor; agasalhe com roupa adequada à temperatura do ambiente.</li>
+          <li>Nos primeiros meses, coloque o berço ou a rede ao lado da cama dos pais ou cuidadores, o que facilita os cuidados e a amamentação à noite.</li>
+          <li>Durante o dia, o sono pode ocorrer em ambiente com iluminação e barulho normais; à noite, em ambiente escuro e silencioso.</li>
+          <li>Após os 6 meses, manter uma rotina diária de dormir, comer e brincar dá segurança à criança.</li>
+          <li><strong>Sinal de perigo:</strong> criança muito sonolenta, com dificuldade para acordar — procure o serviço de saúde ou ligue 192 (SAMU).</li>
+        </ul>
+        <app-official-reference page="Caderneta da Criança, p. 17: o sono do bebê; p. 23: sinais de perigo; p. 42: rotina" />
+      </div>
     </div>
   `
 })

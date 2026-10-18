@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RoutineEventModel, RoutineStore } from '../../../../core/state/routine.store';
+import { OfficialReferenceComponent } from '../../../../shared/components/official-reference/official-reference.component';
 
 @Component({
   selector: 'app-timeline-feed',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, OfficialReferenceComponent],
   template: `
     <section class="card" style="margin-top: 1rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
@@ -15,8 +16,10 @@ import { RoutineEventModel, RoutineStore } from '../../../../core/state/routine.
             <span>Ficha Diária de Registro Sintético (Linha do Tempo Cronológica)</span>
           </h3>
           <p style="font-size: 0.84rem; color: var(--text-secondary);">
-            Modelo estruturado da Seção 7 do Guia Completo com alertas clínicos e rastreabilidade por cuidador.
+            Registro cronológico da rotina para compartilhar com a família e com os profissionais de saúde nas consultas
+            de acompanhamento, com os sinais de perigo e a identificação de quem registrou cada evento.
           </p>
+          <app-official-reference page="Caderneta da Criança, p. 40 e 68: acompanhamento compartilhado; p. 23: sinais de perigo" />
         </div>
         <span class="badge">
           <span aria-hidden="true">🕒</span>

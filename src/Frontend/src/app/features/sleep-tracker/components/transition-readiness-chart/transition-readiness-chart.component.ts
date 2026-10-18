@@ -1,15 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { RoutineStore } from '../../../../core/state/routine.store';
+import { OfficialReferenceComponent } from '../../../../shared/components/official-reference/official-reference.component';
 
 @Component({
   selector: 'app-transition-readiness-chart',
   standalone: true,
+  imports: [OfficialReferenceComponent],
   template: `
     @if (store.napTransition(); as tr) {
       <div class="card">
         <h3 class="section-title">
           <span aria-hidden="true">📊</span>
-          <span>Análise de Transição de Sonecas e Causas de Despertares (Seções 3.2 e 6.1)</span>
+          <span>Rotina do Sono e Acompanhamento da Transição de Sonecas</span>
         </h3>
 
         <div class="card-elevated" style="margin-bottom: 1rem;">
@@ -28,66 +30,17 @@ import { RoutineStore } from '../../../../core/state/routine.store';
           </p>
         </div>
 
-        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">
-          Tabela de Referência de Janelas de Vigília e Transições (0 a 24 Meses)
-        </h4>
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-            <thead>
-              <tr style="border-bottom: 2px solid var(--border-strong); text-align: left;">
-                <th style="padding: 0.5rem;">Faixa Etária</th>
-                <th style="padding: 0.5rem;">Janela de Vigília</th>
-                <th style="padding: 0.5rem;">Sonecas/Dia</th>
-                <th style="padding: 0.5rem;">Marco Fisiológico</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid var(--border-subtle);">
-                <td style="padding: 0.5rem; font-weight: 700;">0 a 1 mês (RN)</td>
-                <td style="padding: 0.5rem;">45 a 60 min</td>
-                <td style="padding: 0.5rem;">4 a 5</td>
-                <td style="padding: 0.5rem;">Ritmo ultradiano, predomínio do sono ativo (REM)</td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-subtle);">
-                <td style="padding: 0.5rem; font-weight: 700;">1 a 2 meses</td>
-                <td style="padding: 0.5rem;">60 a 90 min</td>
-                <td style="padding: 0.5rem;">4</td>
-                <td style="padding: 0.5rem;">Ciclos curtos de 50 a 60 minutos</td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-subtle);">
-                <td style="padding: 0.5rem; font-weight: 700;">3 a 4 meses</td>
-                <td style="padding: 0.5rem;">75 a 120 min</td>
-                <td style="padding: 0.5rem;">3 a 4</td>
-                <td style="padding: 0.5rem;">Início da consolidação circadiana pela melatonina</td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-subtle);">
-                <td style="padding: 0.5rem; font-weight: 700;">4 a 5 meses</td>
-                <td style="padding: 0.5rem;">1h30 a 2h30</td>
-                <td style="padding: 0.5rem;">4 → 3</td>
-                <td style="padding: 0.5rem;">1ª Transição de Sonecas</td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-subtle);">
-                <td style="padding: 0.5rem; font-weight: 700;">7 a 9 meses</td>
-                <td style="padding: 0.5rem;">2h00 a 3h00</td>
-                <td style="padding: 0.5rem;">3 → 2</td>
-                <td style="padding: 0.5rem;">2ª Transição de Sonecas (Manhã e Pós-Almoço)</td>
-              </tr>
-              <tr>
-                <td style="padding: 0.5rem; font-weight: 700;">14 a 18 meses</td>
-                <td style="padding: 0.5rem;">4h00 a 5h30</td>
-                <td style="padding: 0.5rem;">2 → 1</td>
-                <td style="padding: 0.5rem;">Soneca única consolidada após o almoço</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card-elevated" style="margin-top: 1rem; font-size: 0.85rem;">
-          <div style="font-weight: 700; margin-bottom: 0.35rem;">🔍 Diagnóstico Diferencial de Despertares Noturnos (Seção 3.2):</div>
+        <div class="card-elevated" style="font-size: 0.85rem;">
+          <div style="font-weight: 700; margin-bottom: 0.35rem;">🔍 Orientações oficiais sobre rotina, sono e choro</div>
           <ul style="padding-left: 1.2rem; color: var(--text-secondary);">
-            <li><strong>Fome Real vs. Hábito:</strong> Mamadas longas e efetivas indicam fome biológica; sucções de 2–3 min indicam associação para religar ciclos.</li>
-            <li><strong>Saltos Motores e Dentição:</strong> Aquisição de sinapses (rolar, sentar, engatinhar) e inflamação gengival aumentam microdespertares.</li>
+            <li><strong>Recém-nascido:</strong> o bebê dorme muito e acorda para mamar; a amamentação é em livre demanda (8 a 12 vezes por dia no início), sem horários fixos.</li>
+            <li><strong>2 a 4 meses:</strong> crie aos poucos uma rotina das mamadas, do banho e de brincar no tempo em que ela está acordada; isso facilita a regulação das funções fisiológicas do bebê.</li>
+            <li><strong>6 a 9 meses:</strong> o bebê já consegue dormir, comer e brincar em uma rotina mais organizada, de acordo com o ritmo da família.</li>
+            <li><strong>Choro:</strong> o choro é uma forma normal de expressão (fome, frio, calor, dor ou necessidade de aconchego). Bebês não ficam "viciados em colo": evite deixar a criança chorando sozinha.</li>
+            <li><strong>Idade corrigida:</strong> em bebês pré-termo (&lt; 37 semanas), as conquistas são avaliadas pela idade corrigida (idade atual menos o tempo que faltou para completar 40 semanas).</li>
+            <li><strong>Distúrbio do sono</strong> pode ser um dos sinais de que a criança sofre violência; converse com o profissional de saúde se algo não vai bem.</li>
           </ul>
+          <app-official-reference page="Caderneta da Criança, p. 16 e 26: livre demanda; p. 18: choro; p. 19: idade corrigida; p. 41 e 42: rotina; p. 66: violência" />
         </div>
       </div>
     }

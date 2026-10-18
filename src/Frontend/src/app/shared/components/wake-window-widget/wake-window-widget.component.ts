@@ -34,7 +34,7 @@ import { DurationPipe } from '../../pipes/duration.pipe';
             } @else if (ww.alertLevel === 'Overdue') {
               <span class="badge badge-health" style="font-size: 0.88rem; padding: 0.4rem 0.85rem;">
                 <span aria-hidden="true">⚠️</span>
-                <span>JANELA ULTRAPASSADA (RISCO DE CORTISOL)</span>
+                <span>JANELA ULTRAPASSADA</span>
               </span>
             } @else {
               <span class="badge badge-sleep" style="font-size: 0.88rem; padding: 0.4rem 0.85rem;">

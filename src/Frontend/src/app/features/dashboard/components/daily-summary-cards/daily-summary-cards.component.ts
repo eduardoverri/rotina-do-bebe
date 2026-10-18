@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { RoutineStore } from '../../../../core/state/routine.store';
 import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
+import { OfficialReferenceComponent } from '../../../../shared/components/official-reference/official-reference.component';
 
 @Component({
   selector: 'app-daily-summary-cards',
   standalone: true,
-  imports: [DurationPipe],
+  imports: [DurationPipe, OfficialReferenceComponent],
   template: `
     <div class="grid-3" style="margin: 1rem 0;">
       <!-- Card 1: Última Mamada / Nutrição -->
@@ -21,7 +22,7 @@ import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
           {{ store.lastFeedingSummary() }}
         </div>
         <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.25rem;">
-          Livre demanda / Prato 4 Grupos ativo
+          Amamentação em livre demanda • alimentação complementar a partir dos 6 meses
         </div>
       </div>
 
@@ -63,6 +64,7 @@ import { DurationPipe } from '../../../../shared/pipes/duration.pipe';
         </div>
       </div>
     </div>
+    <app-official-reference page="Caderneta da Criança, p. 24 e 31: amamentação e alimentação; p. 18: fraldas e fezes; p. 17: sono" />
   `
 })
 export class DailySummaryCardsComponent {
