@@ -175,7 +175,7 @@ export class ChildrenManagerComponent {
 
   async selectChild(babyId: string): Promise<void> {
     this.babyStore.selectBaby(babyId);
-    await this.routineStore.refreshAllForBaby(babyId);
+    await this.routineStore.refreshAllForBaby(babyId, true);
     this.childSelected.emit();
   }
 

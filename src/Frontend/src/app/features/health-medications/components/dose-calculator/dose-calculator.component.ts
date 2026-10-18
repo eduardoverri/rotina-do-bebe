@@ -46,12 +46,6 @@ import { RoutineStore } from '../../../../core/state/routine.store';
         </div>
       </div>
 
-      @if (feedbackMessage()) {
-        <div class="card-elevated" style="margin-bottom: 1rem; font-weight: 700;">
-          {{ feedbackMessage() }}
-        </div>
-      }
-
       <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
         <button type="button" class="btn btn-health" style="flex: 1;" (click)="submitDose()">
           <span aria-hidden="true">🛡️</span>
@@ -74,7 +68,6 @@ export class DoseCalculatorComponent {
   readonly doseMg = signal(95);
   temperature = 38.2;
   reason = 'Pico febril / Desconforto gengival';
-  readonly feedbackMessage = signal<string | null>(null);
 
   readonly weightKg = computed(() => +(this.babyStore.activeBaby().currentWeightGrams / 1000).toFixed(2));
   readonly maxSafeMg = computed(() => {
@@ -83,14 +76,13 @@ export class DoseCalculatorComponent {
   });
 
   async submitDose(): Promise<void> {
-    const res = await this.routineStore.administerMedication({
+    await this.routineStore.administerMedication({
       medicationName: this.medicationName(),
       doseMg: this.doseMg(),
       dosageGiven: `${this.doseMg()} mg`,
       measuredTemperatureCelsius: this.temperature,
       reason: this.reason
     });
-    this.feedbackMessage.set(res.message);
   }
 
   async simulateOverdoseTest(): Promise<void> {

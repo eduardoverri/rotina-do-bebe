@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { BabyModel, BabyStore } from '../state/baby.store';
+import { PopupAlertService } from '../services/popup-alert.service';
 
 export interface GoogleUserAccount {
   id: string;
@@ -63,6 +64,7 @@ declare global {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly babyStore = inject(BabyStore);
+  private readonly popupAlert = inject(PopupAlertService);
   private readonly apiBaseUrl =
     typeof window !== 'undefined' && window.location.port === '4200'
       ? 'http://localhost:5000/api'
@@ -114,7 +116,11 @@ export class AuthService {
       );
       return true;
     } catch {
-      this.signOut();
+      this.signOut(false);
+      this.popupAlert.warning(
+        'Sua sessão expirou ou não foi encontrada no banco de dados. Faça login novamente.',
+        'Sessão Expirada'
+      );
       return false;
     }
   }
@@ -179,7 +185,7 @@ export class AuthService {
     });
   }
 
-  signOut(): void {
+  signOut(notify = true): void {
     try {
       window.google?.accounts?.id?.disableAutoSelect();
     } catch {}
@@ -190,6 +196,9 @@ export class AuthService {
     this.token.set(null);
     this.currentUser.set(null);
     this.babyStore.clearSession();
+    if (notify) {
+      this.popupAlert.info('Você saiu da sua conta Google com segurança.', 'Sessão Encerrada');
+    }
   }
 
   async setGoogleClientId(clientId: string): Promise<void> {
@@ -200,7 +209,16 @@ export class AuthService {
       await firstValueFrom(
         this.http.put(`${this.apiBaseUrl}/auth/config`, { clientId: trimmed })
       );
-    } catch {}
+      this.popupAlert.success(
+        'Google OAuth 2.0 Client ID atualizado e sincronizado com o servidor.',
+        'Configuração Salva'
+      );
+    } catch {
+      this.popupAlert.warning(
+        'Client ID salvo localmente no navegador, mas não foi possível sincronizar com o servidor.',
+        'Configuração Local'
+      );
+    }
   }
 
   private applySession(
@@ -218,6 +236,10 @@ export class AuthService {
     this.token.set(jwtToken);
     this.currentUser.set(user);
     this.babyStore.setAuthenticatedUserBabies(user.id, familyName, inviteCode, babies);
+    this.popupAlert.success(
+      `Bem-vindo(a), ${user.name}! Conta Google sincronizada com o banco de dados (${babies.length} filho(s) vinculado(s)).`,
+      'Autenticação & Banco de Dados'
+    );
   }
 
   private loadStoredUser(): GoogleUserAccount | null {

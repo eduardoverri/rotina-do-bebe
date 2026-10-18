@@ -1,36 +1,61 @@
 import { Component, inject } from '@angular/core';
-import { RoutineStore } from '../../../core/state/routine.store';
+import { PopupAlertService, PopupAlertType } from '../../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-alert-banner',
   standalone: true,
   template: `
-    @if (store.activeAlertBanner(); as alert) {
-      <div
-        role="alert"
-        class="card"
-        style="margin-bottom: 1rem; border-width: 2px; border-color: var(--cat-health); background: var(--cat-health-bg);">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
-          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-            <span aria-hidden="true" style="font-size: 1.5rem;">
-              {{ alert.level === 'Emergency' ? '🚨' : alert.level === 'Urgent' ? '⚠️' : '🩺' }}
-            </span>
-            <div>
-              <div style="font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em;">
-                {{ alert.level === 'Emergency' ? 'Emergência Pediátrica' : alert.level === 'Urgent' ? 'Alerta Clínico Urgente' : 'Aviso Pediátrico' }}
+    @if (popupService.alerts().length > 0) {
+      <div class="popup-overlay-stack no-print" role="region" aria-live="polite" aria-label="Notificações Pop-up">
+        @for (alert of popupService.alerts(); track alert.id) {
+          <div
+            [attr.role]="alert.type === 'error' || alert.type === 'warning' ? 'alert' : 'status'"
+            class="popup-alert-card"
+            [class.popup-success]="alert.type === 'success'"
+            [class.popup-error]="alert.type === 'error'"
+            [class.popup-warning]="alert.type === 'warning'"
+            [class.popup-info]="alert.type === 'info'">
+            <div style="display: flex; align-items: flex-start; gap: 0.65rem; min-width: 0;">
+              <span aria-hidden="true" style="font-size: 1.25rem; line-height: 1.2; flex-shrink: 0;">
+                {{ getIcon(alert.type) }}
+              </span>
+              <div style="min-width: 0;">
+                <div style="font-weight: 800; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;">
+                  {{ alert.title }}
+                </div>
+                <div style="font-size: 0.86rem; font-weight: 600; margin-top: 0.15rem; word-break: break-word;">
+                  {{ alert.message }}
+                </div>
               </div>
-              <p style="margin-top: 0.25rem; font-weight: 600;">{{ alert.message }}</p>
             </div>
+
+            <button
+              type="button"
+              class="popup-close-btn"
+              (click)="popupService.dismiss(alert.id)"
+              aria-label="Fechar alerta pop-up"
+              title="Fechar">
+              ✕
+            </button>
           </div>
-          <button type="button" class="btn" (click)="store.dismissAlertBanner()" aria-label="Fechar alerta clínico">
-            <span aria-hidden="true">✖</span>
-            <span>Ciente</span>
-          </button>
-        </div>
+        }
       </div>
     }
   `
 })
 export class AlertBannerComponent {
-  readonly store = inject(RoutineStore);
+  readonly popupService = inject(PopupAlertService);
+
+  getIcon(type: PopupAlertType): string {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'error':
+        return '🚨';
+      case 'warning':
+        return '⚠️';
+      case 'info':
+        return 'ℹ️';
+    }
+  }
 }

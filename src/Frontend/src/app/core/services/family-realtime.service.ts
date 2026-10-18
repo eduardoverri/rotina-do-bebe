@@ -1,8 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { PopupAlertService } from './popup-alert.service';
 
 @Injectable({ providedIn: 'root' })
 export class FamilyRealtimeService {
+  private readonly popupAlert = inject(PopupAlertService);
   private hubConnection?: signalR.HubConnection;
   readonly isConnected = signal<boolean>(false);
   readonly lastRealtimeNotification = signal<string | null>(null);
@@ -18,9 +20,9 @@ export class FamilyRealtimeService {
         .build();
 
       this.hubConnection.on('EventRecorded', (eventDoc: { category?: string; recordedByName?: string }) => {
-        this.lastRealtimeNotification.set(
-          `Sincronizado: ${eventDoc.recordedByName ?? 'Cuidador'} registrou ${eventDoc.category ?? 'evento'} agora.`
-        );
+        const msg = `${eventDoc.recordedByName ?? 'Cuidador'} registrou ${eventDoc.category ?? 'um evento'} no banco de dados.`;
+        this.lastRealtimeNotification.set(msg);
+        this.popupAlert.info(msg, 'Sincronização em Tempo Real (Banco)');
         onEventRecorded();
       });
 

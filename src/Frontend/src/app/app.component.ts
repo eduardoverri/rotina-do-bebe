@@ -40,6 +40,9 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
   ],
   template: `
     <div class="pwa-shell">
+      <!-- Stack Global de Alertas Pop-up (Sucesso, Erro, Aviso e Informação) -->
+      <app-alert-banner />
+
       <!-- Cabeçalho PWA Mobile: Nome do Aplicativo + Menu de Navegação Principal -->
       <header class="pwa-header no-print">
         <div class="pwa-topbar">
@@ -145,18 +148,6 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
         @if (!authService.isAuthenticated()) {
           <app-google-login (loggedIn)="onUserAuthenticated()" />
         } @else {
-          @if (routineStore.toastMessage(); as toast) {
-            <div
-              role="status"
-              class="card"
-              style="border-color: var(--cat-diaper); background: var(--cat-diaper-bg); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem;">
-              <span aria-hidden="true">✅</span>
-              <span style="font-size: 0.86rem;">{{ toast }}</span>
-            </div>
-          }
-
-          <app-alert-banner />
-
           @if (!babyStore.hasBabies() && activeTab() !== 'children') {
             <app-children-manager (childSelected)="activeTab.set('dashboard')" />
           } @else {
@@ -238,7 +229,7 @@ export class AppComponent implements OnInit {
 
   async onBabyChange(babyId: string): Promise<void> {
     this.babyStore.selectBaby(babyId);
-    await this.routineStore.refreshAllForBaby(babyId);
+    await this.routineStore.refreshAllForBaby(babyId, true);
   }
 
   switchGoogleAccount(): void {

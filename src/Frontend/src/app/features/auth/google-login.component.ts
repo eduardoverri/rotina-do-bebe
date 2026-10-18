@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild, 
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
 import { RoutineStore } from '../../core/state/routine.store';
+import { PopupAlertService } from '../../core/services/popup-alert.service';
 
 @Component({
   selector: 'app-google-login',
@@ -45,15 +46,6 @@ import { RoutineStore } from '../../core/state/routine.store';
           }
         </div>
 
-        @if (errorMessage()) {
-          <div
-            role="alert"
-            class="card-elevated"
-            style="margin-top: 1rem; border-color: var(--cat-health); color: var(--cat-health); font-size: 0.84rem; font-weight: 600;">
-            {{ errorMessage() }}
-          </div>
-        }
-
         <!-- Configuração do Google Cloud OAuth 2.0 Client ID (Exibida apenas quando GOOGLE_CLIENT_ID não está definido no ambiente) -->
         @if (authService.allowClientIdConfig()) {
           <div style="margin-top: 1.25rem; text-align: center;">
@@ -92,12 +84,12 @@ import { RoutineStore } from '../../core/state/routine.store';
 export class GoogleLoginComponent implements AfterViewInit {
   readonly authService = inject(AuthService);
   readonly routineStore = inject(RoutineStore);
+  private readonly popupAlert = inject(PopupAlertService);
 
   @ViewChild('googleBtnContainer') googleBtnContainer?: ElementRef<HTMLDivElement>;
   @Output() readonly loggedIn = new EventEmitter<void>();
 
   readonly isLoading = signal(false);
-  readonly errorMessage = signal<string | null>(null);
   readonly showClientIdConfig = signal(false);
   clientIdInput = '';
 
@@ -108,7 +100,6 @@ export class GoogleLoginComponent implements AfterViewInit {
   }
 
   async signInWithGoogleSsoPopup(): Promise<void> {
-    this.errorMessage.set(null);
     this.isLoading.set(true);
     try {
       await this.authService.signInWithGoogleOAuthPopup();
@@ -116,14 +107,13 @@ export class GoogleLoginComponent implements AfterViewInit {
       this.loggedIn.emit();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha na autenticação Google SSO.';
-      this.errorMessage.set(msg);
+      this.popupAlert.error(msg, 'Erro de Autenticação Google SSO');
     } finally {
       this.isLoading.set(false);
     }
   }
 
   async saveClientId(): Promise<void> {
-    this.errorMessage.set(null);
     await this.authService.setGoogleClientId(this.clientIdInput);
     this.tryRenderOfficialGoogleButton();
   }
@@ -149,14 +139,16 @@ export class GoogleLoginComponent implements AfterViewInit {
           auto_select: false,
           cancel_on_tap_outside: true,
           callback: async (response: { credential: string }) => {
-            this.errorMessage.set(null);
             this.isLoading.set(true);
             try {
               await this.authService.signInWithGoogleCredential(response.credential);
               await this.routineStore.initialize();
               this.loggedIn.emit();
             } catch {
-              this.errorMessage.set('Falha ao validar o Google ID Token no servidor.');
+              this.popupAlert.error(
+                'Falha ao validar o Google ID Token e sincronizar usuário no banco de dados.',
+                'Erro de Autenticação'
+              );
             } finally {
               this.isLoading.set(false);
             }

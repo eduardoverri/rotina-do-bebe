@@ -357,6 +357,96 @@ button, input, select, textarea {
   font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   Sistema de Alertas Pop-up Flutuantes (Sucesso, Erro, Aviso e Informação)
+   ========================================================================== */
+.popup-overlay-stack {
+  position: fixed;
+  top: calc(0.85rem + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 1.5rem);
+  max-width: 480px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.popup-alert-card {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.05rem;
+  border-radius: 16px;
+  border: 2px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: popupSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.popup-alert-card.popup-success {
+  background: var(--cat-diaper-bg);
+  border-color: var(--cat-diaper);
+  color: var(--cat-diaper-btn-text);
+}
+
+.popup-alert-card.popup-error {
+  background: var(--cat-health-bg);
+  border-color: var(--cat-health);
+  color: var(--cat-health-btn-text);
+}
+
+.popup-alert-card.popup-warning {
+  background: var(--cat-milestone-bg);
+  border-color: var(--cat-milestone);
+  color: var(--cat-milestone-btn-text);
+}
+
+.popup-alert-card.popup-info {
+  background: var(--cat-sleep-bg);
+  border-color: var(--cat-sleep);
+  color: var(--cat-sleep-btn-text);
+}
+
+.popup-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.popup-close-btn:hover {
+  opacity: 1;
+}
+
+@keyframes popupSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;
