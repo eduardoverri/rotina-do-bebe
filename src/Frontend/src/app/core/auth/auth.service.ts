@@ -118,7 +118,7 @@ export class AuthService {
     } catch {
       this.signOut(false);
       this.popupAlert.warning(
-        'Sua sessão expirou ou não foi encontrada no banco de dados. Faça login novamente.',
+        'Sua sessão expirou ou é inválida. Faça login novamente.',
         'Sessão Expirada'
       );
       return false;
@@ -210,12 +210,12 @@ export class AuthService {
         this.http.put(`${this.apiBaseUrl}/auth/config`, { clientId: trimmed })
       );
       this.popupAlert.success(
-        'Google OAuth 2.0 Client ID atualizado e sincronizado com o servidor.',
+        'Configuração de autenticação atualizada com sucesso.',
         'Configuração Salva'
       );
     } catch {
       this.popupAlert.warning(
-        'Client ID salvo localmente no navegador, mas não foi possível sincronizar com o servidor.',
+        'Configuração salva localmente no navegador, mas não foi possível sincronizar com o servidor.',
         'Configuração Local'
       );
     }
@@ -237,8 +237,8 @@ export class AuthService {
     this.currentUser.set(user);
     this.babyStore.setAuthenticatedUserBabies(user.id, familyName, inviteCode, babies);
     this.popupAlert.success(
-      `Bem-vindo(a), ${user.name}! Conta Google sincronizada com o banco de dados (${babies.length} filho(s) vinculado(s)).`,
-      'Autenticação & Banco de Dados'
+      'Autenticação realizada e conta sincronizada com sucesso.',
+      'Autenticação Concluída'
     );
   }
 

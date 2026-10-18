@@ -19,10 +19,10 @@ export class FamilyRealtimeService {
         .configureLogging(signalR.LogLevel.Warning)
         .build();
 
-      this.hubConnection.on('EventRecorded', (eventDoc: { category?: string; recordedByName?: string }) => {
-        const msg = `${eventDoc.recordedByName ?? 'Cuidador'} registrou ${eventDoc.category ?? 'um evento'} no banco de dados.`;
+      this.hubConnection.on('EventRecorded', () => {
+        const msg = 'Um novo registro da rotina foi sincronizado em tempo real.';
         this.lastRealtimeNotification.set(msg);
-        this.popupAlert.info(msg, 'Sincronização em Tempo Real (Banco)');
+        this.popupAlert.info(msg, 'Sincronização em Tempo Real');
         onEventRecorded();
       });
 

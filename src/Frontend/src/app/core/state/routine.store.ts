@@ -225,8 +225,8 @@ export class RoutineStore {
     } catch {
       this.isBackendConnected.set(false);
       this.popupAlert.error(
-        'Não foi possível consultar a família e os filhos no banco de dados.',
-        'Erro de Conexão com o Banco de Dados'
+        'Não foi possível consultar os dados da família e dos filhos.',
+        'Erro de Conexão'
       );
     }
   }
@@ -254,14 +254,14 @@ export class RoutineStore {
       this.babyStore.addBabyToCurrentUser(created);
       await this.refreshAllForBaby(created.id);
       this.popupAlert.success(
-        `Filho(a) "${created.name}" gravado(a) no banco de dados com marcos motores iniciais!`,
-        'Banco de Dados • Cadastro de Filho(a)'
+        'Cadastro de filho(a) realizado com sucesso.',
+        'Cadastro de Filho(a)'
       );
       return created;
     } catch {
       this.popupAlert.error(
-        'Não foi possível salvar o cadastro do filho(a) no banco de dados.',
-        'Erro no Banco de Dados'
+        'Não foi possível salvar o cadastro do filho(a).',
+        'Erro ao Cadastrar'
       );
       return null;
     }
@@ -278,13 +278,13 @@ export class RoutineStore {
         this.clearBabyState();
       }
       this.popupAlert.info(
-        'Cadastro do filho(a) e seus registros associados foram removidos do banco de dados.',
-        'Banco de Dados • Exclusão Concluída'
+        'Cadastro do filho(a) e registros associados removidos com sucesso.',
+        'Exclusão Concluída'
       );
     } catch {
       this.popupAlert.error(
-        'Falha ao remover o cadastro do filho(a) do banco de dados.',
-        'Erro no Banco de Dados'
+        'Falha ao remover o cadastro do filho(a).',
+        'Erro ao Excluir'
       );
     }
   }
@@ -341,10 +341,9 @@ export class RoutineStore {
       this.isBackendConnected.set(true);
 
       if (notifyInfo) {
-        const babyName = this.babyStore.activeBaby().name;
         this.popupAlert.info(
-          `Prontuário de ${babyName} sincronizado do banco de dados (${timeline.events.length} registro(s) na linha do tempo).`,
-          'Banco de Dados • Dados Carregados'
+          'Prontuário e linha do tempo sincronizados com sucesso.',
+          'Dados Carregados'
         );
       }
 
@@ -357,8 +356,8 @@ export class RoutineStore {
     } catch {
       this.isBackendConnected.set(false);
       this.popupAlert.error(
-        'Não foi possível carregar os registros do filho(a) a partir do banco de dados.',
-        'Erro de Leitura no Banco de Dados'
+        'Não foi possível carregar os registros do filho(a).',
+        'Erro de Leitura'
       );
     }
   }
@@ -381,15 +380,15 @@ export class RoutineStore {
       );
       this.handleEventCreated(
         created,
-        `Fralda (${payload.code}) de ${this.babyStore.activeBaby().name} gravada no banco de dados!`,
-        'Banco de Dados • Fralda Registrada'
+        'Registro de fralda salvo com sucesso.',
+        'Fralda Registrada'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/diapers/quick`, payload);
       this.popupAlert.warning(
-        'Sem conexão com o servidor. Fralda salva no banco local (IndexedDB) para sincronização.',
-        'Banco Local Offline • Fralda Enfileirada'
+        'Sem conexão com o servidor. Registro de fralda enfileirado para sincronização.',
+        'Modo Offline • Fralda Enfileirada'
       );
     }
   }
@@ -411,15 +410,15 @@ export class RoutineStore {
       );
       this.handleEventCreated(
         created,
-        `Mamada de ${this.babyStore.activeBaby().name} gravada no banco de dados!`,
-        'Banco de Dados • Mamada Registrada'
+        'Registro de mamada salvo com sucesso.',
+        'Mamada Registrada'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/feeding/quick-breast`, payload);
       this.popupAlert.warning(
-        'Sem conexão com o servidor. Mamada salva no banco local (IndexedDB) para sincronização.',
-        'Banco Local Offline • Mamada Enfileirada'
+        'Sem conexão com o servidor. Registro de mamada enfileirado para sincronização.',
+        'Modo Offline • Mamada Enfileirada'
       );
     }
   }
@@ -443,15 +442,15 @@ export class RoutineStore {
       );
       this.handleEventCreated(
         created,
-        `Prato dos 4 Grupos de ${this.babyStore.activeBaby().name} gravado no banco de dados!`,
-        'Banco de Dados • Refeição Sólida Salva'
+        'Refeição sólida salva com sucesso.',
+        'Refeição Sólida Salva'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/feeding/solids-plate`, payload);
       this.popupAlert.warning(
-        'Sem conexão com o servidor. Refeição salva no banco local (IndexedDB) para sincronização.',
-        'Banco Local Offline • Refeição Enfileirada'
+        'Sem conexão com o servidor. Refeição enfileirada para sincronização.',
+        'Modo Offline • Refeição Enfileirada'
       );
     }
   }
@@ -494,15 +493,15 @@ export class RoutineStore {
       );
       this.handleEventCreated(
         created,
-        `Sessão de sono (${payload.durationMinutes} min) de ${this.babyStore.activeBaby().name} gravada no banco de dados!`,
-        'Banco de Dados • Sono Registrado'
+        'Sessão de sono salva com sucesso.',
+        'Sono Registrado'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       await this.offlineSync.enqueueOfflineEvent(babyId, `/babies/${babyId}/events`, dto);
       this.popupAlert.warning(
-        'Sem conexão com o servidor. Sessão de sono salva no banco local (IndexedDB) para sincronização.',
-        'Banco Local Offline • Sono Enfileirado'
+        'Sem conexão com o servidor. Sessão de sono enfileirada para sincronização.',
+        'Modo Offline • Sono Enfileirado'
       );
     }
   }
@@ -513,14 +512,14 @@ export class RoutineStore {
     try {
       await firstValueFrom(this.http.post(`${this.apiBaseUrl}/babies/${babyId}/feeding/allergen-trial`, payload));
       this.popupAlert.success(
-        `Protocolo alergênico de 72h para "${payload.foodName}" registrado no banco de dados (${this.babyStore.activeBaby().name})!`,
-        'Banco de Dados • Protocolo 72h Iniciado'
+        'Protocolo alergênico de 72h iniciado com sucesso.',
+        'Protocolo 72h Iniciado'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       this.popupAlert.error(
-        'Não foi possível gravar o protocolo alergênico de 72h no banco de dados.',
-        'Erro no Banco de Dados'
+        'Não foi possível iniciar o protocolo alergênico de 72h.',
+        'Erro ao Salvar'
       );
     }
   }
@@ -542,25 +541,25 @@ export class RoutineStore {
         if (symptoms.facialSwelling || symptoms.wheezing) {
           this.popupAlert.error(
             updated.evaluation.clinicalGuidance,
-            'Emergência Alérgica • Gravada no Banco'
+            'Emergência Alérgica'
           );
         } else {
           this.popupAlert.warning(
             updated.evaluation.clinicalGuidance,
-            'Reação Alérgica • Gravada no Banco'
+            'Reação Alérgica'
           );
         }
       } else {
         this.popupAlert.success(
-          `Checklist de sintomas de "${updated.trial.foodName}" atualizado no banco de dados sem reação adversa.`,
-          'Banco de Dados • Monitoramento 72h Atualizado'
+          'Checklist de sintomas atualizado sem reação adversa.',
+          'Monitoramento 72h Atualizado'
         );
       }
       await this.refreshAllForBaby(babyId);
     } catch {
       this.popupAlert.error(
-        'Erro ao atualizar checklist de sintomas alergênicos no banco de dados.',
-        'Erro no Banco de Dados'
+        'Erro ao atualizar o checklist de sintomas alergênicos.',
+        'Erro ao Atualizar'
       );
     }
   }
@@ -587,15 +586,15 @@ export class RoutineStore {
       );
       this.handleEventCreated(
         res.routineEvent,
-        `${res.safety.message} (Dose gravada no banco de dados).`,
-        'Banco de Dados • Medicação Administrada'
+        'Medicação validada e registrada com sucesso.',
+        'Medicação Administrada'
       );
       await this.refreshAllForBaby(babyId);
       return { ok: true, message: res.safety.message };
     } catch (err: unknown) {
       const errorObj = err as { error?: { message?: string } };
       const msg = errorObj?.error?.message ?? 'Bloqueio farmacológico de segurança: verifique dose máxima por peso ou intervalo mínimo.';
-      this.popupAlert.error(msg, 'Bloqueio Farmacológico • Gravação Recusada');
+      this.popupAlert.error(msg, 'Bloqueio Farmacológico');
       return { ok: false, message: msg };
     }
   }
@@ -608,14 +607,14 @@ export class RoutineStore {
         this.http.put(`${this.apiBaseUrl}/babies/${babyId}/milestones/${milestoneCode}`, { status, notes })
       );
       this.popupAlert.success(
-        `Marco motor (${milestoneCode}) de ${this.babyStore.activeBaby().name} atualizado no banco de dados!`,
-        'Banco de Dados • Marco Motor Salvo'
+        'Marco motor atualizado com sucesso.',
+        'Marco Motor Salvo'
       );
       await this.refreshAllForBaby(babyId);
     } catch {
       this.popupAlert.error(
-        'Erro ao atualizar o marco motor no banco de dados.',
-        'Erro no Banco de Dados'
+        'Erro ao atualizar o marco motor.',
+        'Erro ao Atualizar'
       );
     }
   }
@@ -636,7 +635,7 @@ export class RoutineStore {
     this.milestones.set([]);
   }
 
-  private handleEventCreated(ev: RoutineEventModel, successMsg: string, title = 'Banco de Dados • Registro Salvo'): void {
+  private handleEventCreated(ev: RoutineEventModel, successMsg: string, title = 'Registro Salvo'): void {
     this.events.update(list => [ev, ...list]);
     this.popupAlert.success(successMsg, title);
     if (ev.clinicalFlags?.isRedFlagAlert && ev.clinicalFlags.alertMessage) {

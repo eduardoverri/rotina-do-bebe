@@ -146,7 +146,7 @@ export class GoogleLoginComponent implements AfterViewInit {
               this.loggedIn.emit();
             } catch {
               this.popupAlert.error(
-                'Falha ao validar o Google ID Token e sincronizar usuário no banco de dados.',
+                'Falha ao validar a credencial de autenticação no servidor.',
                 'Erro de Autenticação'
               );
             } finally {
