@@ -39,103 +39,124 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
     PediatricReportComponent
   ],
   template: `
-    <div class="app-container">
-      @if (!authService.isAuthenticated()) {
-        <app-google-login (loggedIn)="onUserAuthenticated()" />
-      } @else {
-        <!-- Top Header com Conta Google Autenticada e Seletor de Filhos Isolados -->
-        <header class="card no-print" style="margin-bottom: 1rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.85rem;">
-            <div>
-              <!-- Linha 1: Conta Google Autenticada + Status da Sincronização -->
-              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                @if (authService.currentUser(); as gUser) {
-                  <span class="badge badge-sleep" title="Dados isolados para esta Conta Google">
-                    <span aria-hidden="true">🔐</span>
-                    <span>Conta Google: <strong>{{ gUser.name }}</strong> ({{ gUser.email }})</span>
-                  </span>
-                }
-
-                <span class="badge" [class]="routineStore.isBackendConnected() ? 'badge-diaper' : 'badge-milestone'">
-                  <span aria-hidden="true">{{ routineStore.isBackendConnected() ? '🟢' : '💾' }}</span>
-                  <span>{{ routineStore.isBackendConnected() ? 'API .NET + JWT + SignalR' : 'PWA Offline (Isolado por Usuário/Filho)' }}</span>
-                </span>
-
-                <button
-                  type="button"
-                  class="btn"
-                  style="min-height: 30px; padding: 0.2rem 0.65rem; font-size: 0.78rem;"
-                  (click)="switchGoogleAccount()">
-                  <span aria-hidden="true">🔄</span>
-                  <span>Trocar Conta Google / Sair</span>
-                </button>
-              </div>
-
-              <!-- Linha 2: Seletor de Filho(a) do Usuário Autenticado -->
-              <div style="display: flex; align-items: center; gap: 0.65rem; margin-top: 0.65rem; flex-wrap: wrap;">
-                @if (babyStore.hasBabies()) {
-                  <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">
-                    FILHO(A) ATIVO:
-                  </label>
-                  <select
-                    class="input-field"
-                    style="width: auto; font-weight: 800; font-size: 1.02rem;"
-                    [ngModel]="babyStore.selectedBabyId()"
-                    (ngModelChange)="onBabyChange($event)"
-                    aria-label="Selecionar filho ativo desta conta Google">
-                    @for (b of babyStore.babies(); track b.id) {
-                      <option [value]="b.id">👶 {{ b.name }} — {{ b | babyAge }}</option>
-                    }
-                  </select>
-                }
-
-                <button
-                  type="button"
-                  class="btn"
-                  style="min-height: 40px; padding: 0.4rem 0.85rem; font-size: 0.84rem;"
-                  [class.btn-diaper]="activeTab() === 'children'"
-                  (click)="activeTab.set('children')">
-                  <span aria-hidden="true">➕</span>
-                  <span>Meus Filhos ({{ babyStore.babies().length }}) / Adicionar Filho</span>
-                </button>
-              </div>
+    <div class="pwa-shell">
+      <!-- Cabeçalho PWA Mobile: Nome do Aplicativo + Menu de Navegação Principal -->
+      <header class="pwa-header no-print">
+        <div class="pwa-topbar">
+          <div class="pwa-brand">
+            <span class="pwa-brand-logo" aria-hidden="true">🍼</span>
+            <div style="min-width: 0;">
+              <div class="pwa-brand-title">Rotina do Bebê</div>
+              @if (authService.isAuthenticated() && babyStore.hasBabies()) {
+                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ babyStore.activeBaby().name }} • {{ babyStore.activeBaby() | babyAge }}
+                </div>
+              }
             </div>
-
-            <app-night-mode-toggle />
           </div>
 
-          <!-- Abas de Navegação por Domínio Clínico (Escopadas para o Filho Selecionado) -->
-          <nav aria-label="Navegação Principal" style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle);">
-            @for (tab of tabs; track tab.id) {
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            @if (authService.isAuthenticated() && babyStore.babies().length > 1) {
+              <select
+                class="input-field"
+                style="width: auto; min-height: 36px; padding: 0.25rem 0.55rem; font-size: 0.78rem; font-weight: 700;"
+                [ngModel]="babyStore.selectedBabyId()"
+                (ngModelChange)="onBabyChange($event)"
+                aria-label="Alternar filho ativo">
+                @for (b of babyStore.babies(); track b.id) {
+                  <option [value]="b.id">👶 {{ b.name }}</option>
+                }
+              </select>
+            }
+
+            <app-night-mode-toggle />
+
+            @if (authService.isAuthenticated()) {
               <button
                 type="button"
                 class="btn"
-                style="min-height: 40px; padding: 0.45rem 0.9rem; font-size: 0.86rem;"
-                [class.btn-sleep]="activeTab() === tab.id"
-                (click)="activeTab.set(tab.id)">
+                style="min-height: 36px; width: 38px; padding: 0; border-radius: 11px;"
+                (click)="menuOpen.set(!menuOpen())"
+                [attr.aria-expanded]="menuOpen()"
+                aria-label="Abrir menu de navegação e conta">
+                <span aria-hidden="true" style="font-size: 1.1rem;">{{ menuOpen() ? '✕' : '☰' }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (authService.isAuthenticated()) {
+          <!-- Menu de Navegação Principal no Cabeçalho (Deslizante Horizontal tipo App Mobile) -->
+          <nav aria-label="Menu de Navegação Principal" class="pwa-nav-scroller">
+            @for (tab of tabs; track tab.id) {
+              <button
+                type="button"
+                class="pwa-nav-pill"
+                [class.active]="activeTab() === tab.id"
+                (click)="selectTab(tab.id)">
                 <span aria-hidden="true">{{ tab.icon }}</span>
                 <span>{{ tab.label }}</span>
               </button>
             }
           </nav>
-        </header>
 
-        <!-- Toast de confirmação instantânea -->
-        @if (routineStore.toastMessage(); as toast) {
-          <div
-            role="status"
-            class="card"
-            style="margin-bottom: 1rem; border-color: var(--cat-diaper); background: var(--cat-diaper-bg); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
-            <span aria-hidden="true">✅</span>
-            <span>{{ toast }}</span>
-          </div>
+          <!-- Gaveta / Menu Expandido no Cabeçalho (Navegação Completa + Conta Google + Seletor de Filhos) -->
+          @if (menuOpen()) {
+            <div
+              class="card-elevated"
+              style="margin-top: 0.65rem; display: flex; flex-direction: column; gap: 0.65rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                @if (authService.currentUser(); as gUser) {
+                  <div style="font-size: 0.8rem;">
+                    <div style="font-weight: 800;">{{ gUser.name }}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.74rem;">{{ gUser.email }}</div>
+                  </div>
+                }
+                <button
+                  type="button"
+                  class="btn"
+                  style="min-height: 34px; padding: 0.3rem 0.7rem; font-size: 0.76rem;"
+                  (click)="switchGoogleAccount()">
+                  <span aria-hidden="true">🚪</span>
+                  <span>Sair da Conta</span>
+                </button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4rem;">
+                @for (tab of tabs; track tab.id) {
+                  <button
+                    type="button"
+                    class="btn"
+                    style="justify-content: flex-start; min-height: 38px; padding: 0.4rem 0.65rem; font-size: 0.8rem;"
+                    [class.btn-sleep]="activeTab() === tab.id"
+                    (click)="selectTab(tab.id)">
+                    <span aria-hidden="true">{{ tab.icon }}</span>
+                    <span>{{ tab.label }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
         }
+      </header>
 
-        <!-- Banner de Alerta Clínico de Urgência -->
-        <app-alert-banner />
+      <!-- Área Principal de Conteúdo do App PWA -->
+      <main class="pwa-content">
+        @if (!authService.isAuthenticated()) {
+          <app-google-login (loggedIn)="onUserAuthenticated()" />
+        } @else {
+          @if (routineStore.toastMessage(); as toast) {
+            <div
+              role="status"
+              class="card"
+              style="border-color: var(--cat-diaper); background: var(--cat-diaper-bg); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem;">
+              <span aria-hidden="true">✅</span>
+              <span style="font-size: 0.86rem;">{{ toast }}</span>
+            </div>
+          }
 
-        <!-- Conteúdo Principal Reativo (@switch Angular 19) -->
-        <main>
+          <app-alert-banner />
+
           @if (!babyStore.hasBabies() && activeTab() !== 'children') {
             <app-children-manager (childSelected)="activeTab.set('dashboard')" />
           } @else {
@@ -166,14 +187,14 @@ import { PediatricReportComponent } from './features/reports/pediatric-report.co
               }
             }
           }
-        </main>
+        }
+      </main>
+
+      <!-- Rodapé Fixo com Botões de Registro Rápido Somente com Ícone -->
+      @if (authService.isAuthenticated() && babyStore.hasBabies()) {
+        <app-quick-action-bar (navigateTab)="selectTab($event)" />
       }
     </div>
-
-    <!-- Barra Fixa Inferior 1-Toque (Exibida quando autenticado e com filho selecionado) -->
-    @if (authService.isAuthenticated() && babyStore.hasBabies()) {
-      <app-quick-action-bar (navigateTab)="activeTab.set($event)" />
-    }
   `
 })
 export class AppComponent implements OnInit {
@@ -184,16 +205,17 @@ export class AppComponent implements OnInit {
   readonly realtime = inject(FamilyRealtimeService);
 
   readonly activeTab = signal<string>('dashboard');
+  readonly menuOpen = signal<boolean>(false);
 
   readonly tabs = [
-    { id: 'dashboard', label: 'Visão Geral & Ficha Diária', icon: '📊' },
-    { id: 'children', label: 'Meus Filhos', icon: '👶' },
-    { id: 'sleep', label: 'Sono & Janela de Vigília', icon: '💤' },
-    { id: 'feeding', label: 'Nutrição & Alérgenos 72h', icon: '🤱' },
-    { id: 'diapers', label: 'Fraldas & Triagem (U/E/M/L)', icon: '🧷' },
-    { id: 'health', label: 'Farmacologia & Vacinas', icon: '💊' },
-    { id: 'milestones', label: 'Marcos Motores (0–24m)', icon: '🏆' },
-    { id: 'report', label: 'Relatório Pediátrico', icon: '🩺' }
+    { id: 'dashboard', label: 'Início', icon: '📊' },
+    { id: 'sleep', label: 'Sono', icon: '💤' },
+    { id: 'feeding', label: 'Nutrição', icon: '🤱' },
+    { id: 'diapers', label: 'Fraldas', icon: '🧷' },
+    { id: 'health', label: 'Saúde', icon: '💊' },
+    { id: 'milestones', label: 'Marcos', icon: '🏆' },
+    { id: 'report', label: 'Relatório', icon: '🩺' },
+    { id: 'children', label: 'Filhos', icon: '👶' }
   ];
 
   async ngOnInit(): Promise<void> {
@@ -203,6 +225,11 @@ export class AppComponent implements OnInit {
         await this.routineStore.initialize();
       }
     }
+  }
+
+  selectTab(tabId: string): void {
+    this.activeTab.set(tabId);
+    this.menuOpen.set(false);
   }
 
   async onUserAuthenticated(): Promise<void> {
@@ -215,6 +242,7 @@ export class AppComponent implements OnInit {
   }
 
   switchGoogleAccount(): void {
+    this.menuOpen.set(false);
     this.authService.signOut();
   }
 }

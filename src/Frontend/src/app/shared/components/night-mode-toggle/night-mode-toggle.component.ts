@@ -7,14 +7,14 @@ import { Component, signal } from '@angular/core';
     <button
       type="button"
       class="btn"
+      style="min-height: 36px; width: 38px; padding: 0; border-radius: 11px;"
       (click)="toggleScheme()"
-      [attr.aria-label]="isDarkRendered() ? 'Alternar para Modo Diurno' : 'Alternar para Modo Madrugada (Escuro)'">
+      [title]="isDarkRendered() ? 'Modo Noturno Ativo (Toque para Modo Dia Pastel)' : 'Modo Dia Pastel Ativo (Toque para Modo Noturno)'"
+      [attr.aria-label]="isDarkRendered() ? 'Alternar para Modo Dia Pastel' : 'Alternar para Modo Noturno'">
       @if (isDarkRendered()) {
-        <span aria-hidden="true">🌙</span>
-        <span>Modo Madrugada (Ativo)</span>
+        <span aria-hidden="true" style="font-size: 1.05rem;">🌙</span>
       } @else {
-        <span aria-hidden="true">☀️</span>
-        <span>Modo Diurno</span>
+        <span aria-hidden="true" style="font-size: 1.05rem;">☀️</span>
       }
     </button>
   `
@@ -26,7 +26,7 @@ export class NightModeToggleComponent {
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
         if (e.key === 'color-scheme') {
-          this.applyMeta(e.newValue ?? 'light dark');
+          this.applyMeta(e.newValue ?? 'light');
           this.isDarkRendered.set(this.computeCurrentRenderedDark());
         }
       });
@@ -36,34 +36,26 @@ export class NightModeToggleComponent {
   toggleScheme(): void {
     const currentlyDark = this.computeCurrentRenderedDark();
     const target: 'light' | 'dark' = currentlyDark ? 'light' : 'dark';
-    const systemPrefersDark = typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const systemScheme: 'light' | 'dark' = systemPrefersDark ? 'dark' : 'light';
-
-    if (target === systemScheme) {
-      localStorage.removeItem('color-scheme');
-      this.applyMeta('light dark');
-    } else {
-      localStorage.setItem('color-scheme', target);
-      this.applyMeta(target);
-    }
-
+    localStorage.setItem('color-scheme', target);
+    this.applyMeta(target);
     this.isDarkRendered.set(target === 'dark');
   }
 
-  private applyMeta(content: string): void {
-    const meta = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
-    if (meta) {
-      meta.content = content;
+  private applyMeta(content: 'light' | 'dark' | string): void {
+    const metaScheme = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
+    if (metaScheme) {
+      metaScheme.content = content;
+    }
+    const metaTheme = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (metaTheme) {
+      metaTheme.content = content === 'dark' ? '#0A0B0E' : '#FAF7F2';
     }
   }
 
   private computeCurrentRenderedDark(): boolean {
-    if (typeof document === 'undefined') return true;
+    if (typeof document === 'undefined') return false;
     const meta = document.querySelector('meta[name="color-scheme"]') as HTMLMetaElement | null;
-    const val = meta?.content ?? localStorage.getItem('color-scheme') ?? 'light dark';
-    if (val === 'dark') return true;
-    if (val === 'light') return false;
-    return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const val = meta?.content ?? localStorage.getItem('color-scheme') ?? 'light';
+    return val === 'dark';
   }
 }

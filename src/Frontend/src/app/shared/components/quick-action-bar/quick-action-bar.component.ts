@@ -5,54 +5,46 @@ import { RoutineStore } from '../../../core/state/routine.store';
   selector: 'app-quick-action-bar',
   standalone: true,
   template: `
-    <nav
-      aria-label="Barra de Ação Rápida 1-Toque"
-      class="no-print"
-      style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: var(--bg-surface); border-top: 2px solid var(--border-strong); padding: 0.65rem 1rem; box-shadow: var(--shadow-card);">
-      <div style="max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em;">
-          ⚡ Registro Rápido (1-Toque):
-        </div>
+    <footer
+      role="contentinfo"
+      aria-label="Rodapé de Registro Rápido 1-Toque"
+      class="pwa-bottom-dock no-print">
+      <button
+        type="button"
+        class="quick-icon-btn btn-feeding"
+        (click)="quickBreast1Tap()"
+        [attr.aria-label]="'Registrar mamada rápida (' + (store.lastBreastSide() === 'Left' ? 'Próximo: Direito' : 'Próximo: Esquerdo') + ')'"
+        [title]="'Registrar mamada rápida (' + (store.lastBreastSide() === 'Left' ? 'Próx: Dir' : 'Próx: Esq') + ')'">
+        <span aria-hidden="true">🤱</span>
+      </button>
 
-        <div style="display: flex; gap: 0.5rem; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
-          <button
-            type="button"
-            class="btn btn-feeding quick-bar-btn"
-            (click)="quickBreast1Tap()"
-            title="Registrar mamada rápida alternando o último seio oferecido">
-            <span aria-hidden="true">🤱</span>
-            <span>Amamentar ({{ store.lastBreastSide() === 'Left' ? 'Próx: Dir' : 'Próx: Esq' }})</span>
-          </button>
+      <button
+        type="button"
+        class="quick-icon-btn btn-sleep"
+        (click)="quickNap1Tap()"
+        aria-label="Registrar soneca rápida (1 toque)"
+        title="Registrar soneca rápida (1 toque)">
+        <span aria-hidden="true">💤</span>
+      </button>
 
-          <button
-            type="button"
-            class="btn btn-sleep quick-bar-btn"
-            (click)="quickNap1Tap()"
-            title="Registrar soneca padrão no berço">
-            <span aria-hidden="true">💤</span>
-            <span>Soneca (1 Toque)</span>
-          </button>
+      <button
+        type="button"
+        class="quick-icon-btn btn-diaper"
+        (click)="quickDiaper1Tap()"
+        aria-label="Registrar fralda U2 rápida (1 toque)"
+        title="Registrar fralda U2 rápida (1 toque)">
+        <span aria-hidden="true">🧷</span>
+      </button>
 
-          <button
-            type="button"
-            class="btn btn-diaper quick-bar-btn"
-            (click)="quickDiaper1Tap()"
-            title="Registrar fralda U2 (Urina média com pomada)">
-            <span aria-hidden="true">🧷</span>
-            <span>Fralda U2</span>
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-health quick-bar-btn"
-            (click)="navigateTab.emit('health')"
-            title="Abrir calculadora segura de medicação e suplementos">
-            <span aria-hidden="true">💊</span>
-            <span>Medicação</span>
-          </button>
-        </div>
-      </div>
-    </nav>
+      <button
+        type="button"
+        class="quick-icon-btn btn-health"
+        (click)="navigateTab.emit('health')"
+        aria-label="Registrar medicação ou suplemento"
+        title="Registrar medicação ou suplemento">
+        <span aria-hidden="true">💊</span>
+      </button>
+    </footer>
   `
 })
 export class QuickActionBarComponent {
